@@ -1,67 +1,36 @@
-# Selective Profiling for Unity
-## Runtime deep profile individual methods 🔬
-With selective profiler you can choose individual methods to profile from Unity Profiler. Just select a method in the Profiler window and choose ``Profile`` to automatically get more precice information.
+# UPM Packages in .unitypackage files
 
+Unity has two separate package formats:
+- `.unitypackage`, a zip-based file format that is used on the Asset Store
+- `UPM package`, to prepare modules for Unity's package manager.
+  
+The latter is newer, enforces better code and directory structure (AsmDefs required), and generally much easier to work with / add / remove / update.
 
+So far, it has been impossible to ship UPM packages on Asset Store or via `.unitypackage` files. This repository fixes that by
+- allowing packages to be uploaded to the Asset Store through the regular Asset Store Tools
+- enabling <kbd>Assets/Export Package</kbd> to export stuff from package folders directly
 
-![](Documentation~/profiler-select.png)
-
-![](Documentation~/beforeafter.png)
-
-
-
-## Features 🧬
-- ### Select methods in the Unity Profiler to start or stop deep profiling, at any time! No domain reload or restart needed. 
-![](Documentation~/profiler-select.gif)
-- ### Mark methods or classes in your project with ``[AlwaysProfile]`` to be always deep profiled without having to turn on Deep Profiling for your whole project or selecting specific methods.
-
-
-
-## Installation 💾
-1) 
-    <details>
-    <summary>Clone this repository and add OpenUPM to your project</em></summary>
-
-    To add OpenUPM to your project:
-
-    - open `Edit/Project Settings/Package Manager`
-    - add a new Scoped Registry:
-    ```
-    Name: OpenUPM
-    URL:  https://package.openupm.com/
-    Scope(s): com.needle
-    ```
-    - click <kbd>Save</kbd>
-    </details>
-
-2) Add the folder named "package" to your project in Package Manager via local file path ``"com.needle.selective-profiling": "file:path/to/cloned/repo/package"``). 
-3) That's it. Now you should be able to right click methods in profiler to add samples. You can find settings under ``Project Settings/Needle/Selective Profiler``
+> :warning: Please be aware that Unity might decide to disable this functionality at any point, and will likely add some form of UPM support to AssetStore in the next years. This is a pretty experimental solution.
 
 ## How to use 💡
-- ### How to select a method to profile
-  1) You can right click a method in the profiler and enable or disable profiling
-  2) You can right click a component in the inspector and select ``Profile/...`` for profiling options
-  3) You can rigth click a gameobject in the hierarchy to profile all the user methods found in the hierarchy
 
-  **NOTE**: when selecting methods in edit mode they will be saved to the selected methods list. Selected methods in playmode will not be saved.
-  
-- ### How to remove previously saved methods
-  At edit time you right click methods in the profiler window to enable or disable profiling them.
-  Generally to see what is currently saved open ``Project Settings/Needle/Selective Profiler``. In the settings window you can see an overview of all saved methods. You can remove a method completely by clicking the X or to mute a method disable the toggle which means it will not be profiled and if deep profiling is enabled and other method call this method it will be skipped.
-  
-- ### How to always deep profile classes or methods?
-   Just add a ``[AlwaysProfile]`` attribute to your class or method you want to profile
+### Export a .unitypackage that contains files in Packages or entire packages
+As usual, select what you want to export, and hit <kbd>Assets/Export Package</kbd> (also available via right click).  
 
-## Technical background 💉
-Internally when a method gets selected for profiling we wrap every call instruction inside that selected method with ``Profiler.Begin`` and ``End`` calls. **The resulting output is the same as if you would have added those calls manually in your code!**
+### Upload Packages to Asset Store
+1. Install the Asset Store Tools as usual: https://assetstore.unity.com/packages/tools/utilities/asset-store-tools-115
+1. Open <kbd>Asset Store Tools/Package Upload</kbd>
+1. Press <kbd>Select</kbd> and select a local or embedded package
+2. Make sure "include dependencies" is off - you can now specify them through your package.json!
+3. Press <kbd>Upload</kbd>
 
-For injection we use [Harmony](https://github.com/pardeike/Harmony), an awesome library by Andreas Pardeike. Harmony allows to modify almost any code at runtime by modifying the underlying IL instructions. Those modifications are only in memory and dont affect your C# code or built Unity game/player.
+## Known Issues / Limitations
+- The optional <kbd>Validate</kbd> step isn't supported yet. Export your package via <kbd>Right Click/Export Package</kbd> and test in a separate project for now.
+- If you run into any issues, you can temporarily disable the functionality via <kbd>Edit/Project Settings/Needle/Editor Patch Manager</kbd> or remove the package. Please report a bug!
+- The `package.json` of your package can [define dependencies](https://docs.unity3d.com/Manual/upm-manifestPrj.html). However, only dependencies from the Unity Registry will be automatically resolved in empty projects - we'll need to think of a separate mechanism / guidance for people to add dependencies from scoped registries. For now, it's recommended that you guard against missing dependencies via [Version Defines](https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#define-symbols).
 
-## Known issues / limitations 😰
-- Generic classes or methods are currently not supported. [See issue](https://github.com/needle-tools/selective-profiling/issues/6)
-- In the Profiler window currently some methods (usually ending with brackets ``()``) can be selected for profiling. We're still looking into on how to use the Profiler API to get method information for selected rows.
-- Occasionally injections break method functionality or cause errors ([see issue](https://github.com/needle-tools/selective-profiling/issues/2)). It seems to only happen with properties though. Profiling code inside properties should seldomly be important and therefor it is disabled by default (See setting ``Skip Properties``). Otherwise it is recommended to try disabling the ``Deep Profile`` option in ``Project Settings/Needle/Selective Profiling`` or decreasing the ``Max Level``. In any case please also [open an issue](https://github.com/needle-tools/selective-profiling/issues/new) with as much information about your project and profiled method as possible to help us find and fix issues like that.
-- Injecting samples for method calls in try-catch blocks is currently prevented. This is to prevent Begin-End mismatch errors if a called method in ``try{}`` throws an exception
+## Technical Details  
+All the infrastructure is there to use packages in .unitypackages; it mostly looks like nobody has taken the time to revisit some decisions around this. It just works! It's just too many incorrect/outdated safety checks - so what we're doing here is bypassing those.
 
 ## Contact ✒️
 <b>[🌵 needle — tools for unity](https://needle.tools)</b> • 
@@ -69,4 +38,3 @@ For injection we use [Harmony](https://github.com/pardeike/Harmony), an awesome 
 [@marcel_wiessler](https://twitter.com/marcel_wiessler) • 
 [@hybridherbst](https://twitter.com/hybridherbst) • 
 [Needle Discord](https://discord.gg/CFZDp4b)
-
