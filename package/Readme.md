@@ -12,6 +12,27 @@ So far, it has been impossible to ship UPM packages on Asset Store or via `.unit
 
 > :warning: Please be aware that Unity might decide to disable this functionality at any point, and will likely add some form of UPM support to AssetStore in the next years. This is a pretty experimental solution.
 
+## Installation 💾
+1. 
+    <details>
+    <summary>Add OpenUPM with the <code>com.needle</code> scope to your project (this package has a dependency there)</summary>
+
+    - open <kbd>Edit/Project Settings/Package Manager</kbd>
+    - add a new Scoped Registry:
+    ```
+    Name: OpenUPM
+    URL:  https://package.openupm.com/
+    Scope(s): com.needle
+    ```
+    - click <kbd>Save</kbd>
+    </details>
+2. Add this repository as git package (it's not on OpenUPM yet)
+   - open <kbd>Window/Package Manager</kbd>
+   - click <kbd>+</kbd>
+   - click <kbd>Add package from git URL</kbd>
+   - paste `https://github.com/needle-tools/upm-in-unitypackage.git/?path=/package`
+   - click <kbd>Add</kbd>
+
 ## How to use 💡
 
 ### Export a .unitypackage that contains files in Packages or entire packages
