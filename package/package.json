@@ -1,0 +1,16 @@
+{
+	"displayName": "UPM Packages in .unitypackage",
+	"name": "com.needle.upm-to-unitypackage",
+	"version": "0.1.0-exp",
+	"unity": "2020.3",
+	"description": "Export UPM packages as .unitypackage files and upload them to the AssetStore",
+	"author": {
+		"name": "Needle",
+		"email": "contact@needle.tools",
+		"url": "https://needle.tools"
+	  },
+	"category": "Libraries",
+	"dependencies": {
+		"com.needle.editorpatching" : "1.1.1-exp"
+	}
+}

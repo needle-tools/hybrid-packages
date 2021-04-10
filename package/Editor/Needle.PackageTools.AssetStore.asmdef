@@ -1,0 +1,20 @@
+{
+    "name": "Unity.InternalAPIEditorBridge.011",
+    "rootNamespace": "",
+    "references": [
+        "GUID:336404f647c61ce4db3b999a77d5db23"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "AssetStoreTools.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
