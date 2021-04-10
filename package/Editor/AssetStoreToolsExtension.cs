@@ -171,6 +171,13 @@ namespace Needle.PackageTools
                 return Task.CompletedTask;
             }
 
+            
+            class PackageInfoMock
+            {
+                public string name;
+                public string resolvedPath;
+            }
+            
             // ReSharper disable once UnusedMember.Local
             private static bool Prefix(ref string[] __result, object __instance, bool includeProjectSettings)
             {
@@ -186,13 +193,29 @@ namespace Needle.PackageTools
                 if (string.IsNullOrEmpty(localRootPath) || localRootPath.Equals("/", StringComparison.Ordinal))
                     return true;
 
+                
                 // localRootPath is now project-relative, so not a package folder...
                 // We need to figure out if it's a proper package folder here, or already convert the path way earlier
                 // For now, we'll just check if any project package has this as resolved path
-                UnityEditor.PackageManager.PackageInfo packageInfo = null;
+                PackageInfoMock packageInfo = null;
                 var packageInfos = AssetDatabase
-                    .FindAssets("package").Where(x => AssetDatabase.GUIDToAssetPath(x).EndsWith("package.json"))
-                    .Select(x => UnityEditor.PackageManager.PackageInfo.FindForAssetPath(AssetDatabase.GUIDToAssetPath(x))).Distinct();
+                    .FindAssets("package")
+                    .Select(AssetDatabase.GUIDToAssetPath)
+                    .Where(x => x.StartsWith("Packages/") && x.EndsWith("/package.json"))
+                    .Select(x =>
+                    {
+                        if (string.IsNullOrEmpty(x)) return null;
+                        var parts = x.Split('/');
+                        if (parts.Length != 3) return null;
+                        
+                        return new PackageInfoMock()
+                        {
+                            name = parts[1],
+                            resolvedPath = Path.GetDirectoryName(Path.GetFullPath(x))?.Replace("\\", "/")
+                        };
+                    })
+                    .Where(x => x != null)
+                    .Distinct();
 
                 foreach (var x in packageInfos)
                 {
