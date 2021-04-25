@@ -82,8 +82,14 @@ namespace Needle.PackageTools
         public override string Description => "Allows to export and upload .unitypackage files that contain Packages data to AssetStore";
         public override string DisplayName => "UPM support for AssetStoreTools";
 
+        // public override bool OnWillEnablePatch()
+        // {
+        //     return Helpers.GetAssetStoreToolsAssembly() != null;
+        // }
+
         protected override void OnGetPatches(List<EditorPatch> patches)
         {
+            // safeguard, should be prevented by OnWillEnablePatch
             if (Helpers.GetAssetStoreToolsAssembly() == null) return;
             
             patches.Add(new PathValidationPatch());
