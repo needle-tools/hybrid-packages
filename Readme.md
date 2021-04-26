@@ -15,7 +15,7 @@ This repository fixes that by changing the directory export checks to allow asse
 
 The resulting .unitypackage files _do not require any additional setup for users_.
 
-> :warning: Please be aware that Unity might decide to disable this functionality at any point, and will likely add some form of UPM support to AssetStore in the next years. This is a pretty experimental solution.
+> :warning: This is experimental. Unity will likely add some form of UPM support to AssetStore in the next years.
 
 ## Installation 💾
 1. 
