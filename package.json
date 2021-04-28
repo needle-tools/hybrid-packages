@@ -12,6 +12,5 @@
 	"category": "Libraries",
 	"dependencies": {
 		"com.needle.editorpatching" : "1.1.1-exp"
-	},
-	"private": true
+	}
 }
