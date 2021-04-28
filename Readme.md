@@ -1,6 +1,6 @@
 # UPM Packages in .unitypackage files
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202020.3-brightgreen)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202021.1-brightgreen)
 
 Unity has two separate package formats:
 - `.unitypackage`, a zip-based file format that is used on the Asset Store
@@ -9,18 +9,18 @@ Unity has two separate package formats:
 The latter is newer, enforces better code and directory structure (AsmDefs required), and generally much easier to work with / add / remove / update.
 
 So far, it has been impossible to ship UPM packages on Asset Store or via `.unitypackage` files.  
-This repository fixes that by changing the directory export checks to allow assets from the Packages folder to be exported, which 
+This package fixes that. After installing, you can select assets and folders from the Packages folder to be exported, which 
 - allows packages to be uploaded to the Asset Store through the regular Asset Store Tools
 - enables <kbd>Assets/Export Package</kbd> to export stuff from package folders directly
 
-The resulting .unitypackage files _do not require any additional setup for users_.
+The resulting .unitypackage files _do not require any additional setup for users_. This package here is only required for creating those `.unitypackage` files, not for importing them.
 
 > :warning: This is experimental. Unity will likely add some form of UPM support to AssetStore in the next years.
 
 ## Installation 💾
 1. 
     <details>
-    <summary>Add OpenUPM with the <code>com.needle</code> scope to your project (this package has a dependency there)</summary>
+    <summary>Add the OpenUPM registry with the <code>com.needle</code> scope to your project</summary>
 
     - open <kbd>Edit/Project Settings/Package Manager</kbd>
     - add a new Scoped Registry:
@@ -31,17 +31,26 @@ The resulting .unitypackage files _do not require any additional setup for users
     ```
     - click <kbd>Save</kbd>
     </details>
-2. Add this repository as git package (it's not on OpenUPM yet)
+2. Add this package:
    - open <kbd>Window/Package Manager</kbd>
    - click <kbd>+</kbd>
-   - click <kbd>Add package from git URL</kbd>
-   - paste `https://github.com/needle-tools/upm-in-unitypackage.git/?path=/package`
+   - click <kbd>Add package from git URL</kbd> or <kbd>Add package by name</kbd>
+   - paste `com.needle.upm-in-unitypackage`
    - click <kbd>Add</kbd>
+
+<details>
+<summary><em>Alternative: git package (no PackMan updates, not recommended)</em></summary>  
+
+- Complete step 1 above  
+- Add `https://github.com/needle-tools/upm-in-unitypackage.git/?path=/package` in Package Manager  
+
+</details>
 
 ## How to use 💡
 
 ### Export a .unitypackage that contains files in Packages or entire packages
-As usual, select what you want to export, and hit <kbd>Assets/Export Package</kbd> (also available via right click).  
+1. select what you want to export
+2. hit <kbd>Assets/Export Package</kbd> (also available via right click on Assets/Folders).  
 
 ### Upload Packages to Asset Store
 1. Install the Asset Store Tools as usual: https://assetstore.unity.com/packages/tools/utilities/asset-store-tools-115
@@ -52,6 +61,7 @@ As usual, select what you want to export, and hit <kbd>Assets/Export Package</kb
 
 ## Known Issues / Limitations
 - The optional <kbd>Validate</kbd> step isn't supported yet. Export your package via <kbd>Right Click/Export Package</kbd> and test in a separate project for now.
+- Dependencies into other packages shouldn't be exported, so it's recommended to turn off "Include Dependencies" when exporting a package.
 - If you run into any issues, you can temporarily disable the functionality via <kbd>Edit/Project Settings/Needle/Editor Patch Manager</kbd> or remove the package. Please report a bug!
 - The `package.json` of your package can [define dependencies](https://docs.unity3d.com/Manual/upm-manifestPrj.html). However, only dependencies from the Unity Registry will be automatically resolved in empty projects - we'll need to think of a separate mechanism / guidance for people to add dependencies from scoped registries. For now, it's recommended that you guard against missing dependencies via [Version Defines](https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#define-symbols).
 
@@ -60,6 +70,11 @@ As usual, select what you want to export, and hit <kbd>Assets/Export Package</kb
 This is tested with Unity 2018.4, 2019.4, 2020.3 and Asset Store Tools 5.0.4.
 
 All the functionality to use packages in .unitypackages is already provided by Unity. Just the tooling to create them has too many incorrect/outdated safety checks - so all we're doing here is bypassing those. It's still the same Unity APIs creating / exporting / importing packages.
+
+## Ideas for Future Development
+- Immutable Packages could be shipped in `.unitypackage` as well as `Packages/com.my.package.tgz`, but this needs a bit more work to create an additional archive and include that in the exported package.
+- More safeguards around accidental inclusion of dependencies from other packages
+- Ability to show hints/warnigs for people to ask them to manually install dependencies from scoped registries. The Unity Terms of Service currently prohibit doing this automatically.
 
 ## If you're Unity
 
