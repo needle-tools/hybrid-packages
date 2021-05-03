@@ -57,7 +57,7 @@ namespace Needle.PackageTools
                         assetPath = AssetDatabase.GUIDToAssetPath(x),
                         enabledStatus = (int) PackageExportTreeView.EnabledState.All,
                         guid = x,
-                        isFolder = AssetDatabase.GetMainAssetTypeAtPath(AssetDatabase.GUIDToAssetPath(x)) == typeof(DefaultAsset)
+                        isFolder = AssetDatabase.IsValidFolder(AssetDatabase.GUIDToAssetPath(x))
                     })
                     .Where(x => !x.isFolder); // ignore folders, otherwise these seem to end up being separate assets and ignored on import
                 

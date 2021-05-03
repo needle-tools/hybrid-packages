@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [0.3.0] - 2021-05-03
 - embedded Harmony plugin to simplify dependencies
+- fixed: DLLs were not exported in some cases because Unity treats them as DefaultAssets, same as folders
 
 ## [0.2.0] - 2021-04-28
 - initial OpenUPM release
