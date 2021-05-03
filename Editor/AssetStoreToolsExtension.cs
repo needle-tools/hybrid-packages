@@ -3,37 +3,29 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using HarmonyLib;
 using UnityEditor;
 using UnityEngine;
-using needle.EditorPatching;
-using UnityEditor.Compilation;
 using Assembly = System.Reflection.Assembly;
 
 // ReSharper disable InconsistentNaming
 
 namespace Needle.PackageTools
 {
-    public class PackagerPatchProvider : EditorPatchProvider
+    public class PackagerPatchProvider
     {
-        public override bool ActiveByDefault => true;
-        public override string Description => "Allows to export files from `Packages` via `Assets/Export Package`";
-        public override string DisplayName => "UPM support for `Assets/Export Package`";
-        
-        protected override void OnGetPatches(List<EditorPatch> patches)
+        [InitializeOnLoadMethod]
+        static void OnGetPatches()
         {
-            patches.Add(new PackagerPatch());
+            var harmony = new Harmony(nameof(PackagerPatchProvider));
+            var type = typeof(EditorWindow).Assembly.GetType("UnityEditor.PackageExport");
+            var method = type?.GetMethod("GetAssetItemsForExport", (BindingFlags) (-1));
+            if(method == null) return;
+            harmony.Patch(method, new HarmonyMethod(AccessTools.Method(typeof(PackagerPatch), "Prefix")));
         }
         
-        private class PackagerPatch : EditorPatch
+        private class PackagerPatch
         {
-            protected override Task OnGetTargetMethods(List<MethodBase> targetMethods)
-            {
-                var m = typeof(EditorWindow).Assembly.GetType("UnityEditor.PackageExport").GetMethod("GetAssetItemsForExport", (BindingFlags) (-1));
-                targetMethods.Add(m);
-                return Task.CompletedTask;
-            }
-            
             // ReSharper disable once UnusedMember.Local
             // ReSharper disable once RedundantAssignment
             private static bool Prefix(ref IEnumerable<ExportPackageItem> __result, ICollection<string> guids, bool includeDependencies)
@@ -52,12 +44,12 @@ namespace Needle.PackageTools
                 // if (includeDependencies)
                 //     Helpers.Log("You're exporting a package. If your package has dependencies and you want to export them, they need to be manually selected.");
 
-                var rootsAndChildGuids = resultingGuids.Union(guids).Distinct();
+                var rootsAndChildGuids = resultingGuids.Union(guids).Distinct().ToList();
                 if (includeDependencies)
                     rootsAndChildGuids = rootsAndChildGuids.Union(AssetDatabase
                         .GetDependencies(rootsAndChildGuids.Select(AssetDatabase.GUIDToAssetPath).ToArray(), true)
                         .Select(AssetDatabase.AssetPathToGUID))
-                        .Distinct();
+                        .Distinct().ToList();
 
                 __result = rootsAndChildGuids
                     .Select(x => new ExportPackageItem()
@@ -76,36 +68,28 @@ namespace Needle.PackageTools
         }
     }
 
-    public class AssetStoreToolsPatchProvider : EditorPatchProvider
+    public class AssetStoreToolsPatchProvider
     {
-        public override bool ActiveByDefault => true;
-        public override string Description => "Allows to export and upload .unitypackage files that contain Packages data to AssetStore";
-        public override string DisplayName => "UPM support for AssetStoreTools";
-
-        // public override bool OnWillEnablePatch()
-        // {
-        //     return Helpers.GetAssetStoreToolsAssembly() != null;
-        // }
-
-        protected override void OnGetPatches(List<EditorPatch> patches)
+        [InitializeOnLoadMethod]
+        static void OnGetPatches()
         {
             // safeguard, should be prevented by OnWillEnablePatch
             if (Helpers.GetAssetStoreToolsAssembly() == null) return;
-            
-            patches.Add(new PathValidationPatch());
-            patches.Add(new RootPathPatch());
-            patches.Add(new GetGUIDsPatch());
+
+            var harmony = new Harmony(nameof(AssetStoreToolsPatchProvider));
+            PathValidationPatch.Patch(harmony);
+            RootPathPatch.Patch(harmony);
+            GetGUIDsPatch.Patch(harmony);
         }
 
-        public class PathValidationPatch : EditorPatch
+        public class PathValidationPatch
         {
-            protected override Task OnGetTargetMethods(List<MethodBase> targetMethods)
+            public static void Patch(Harmony harmony)
             {
                 var asm = Helpers.GetAssetStoreToolsAssembly();
-                if (asm == null) return Task.CompletedTask;
+                if (asm == null) return;
                 var m = asm.GetType("AssetStorePackageController").GetMethod("IsValidProjectFolder", (BindingFlags) (-1));
-                targetMethods.Add(m);
-                return Task.CompletedTask;
+                harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(PathValidationPatch), "Prefix")));
             }
 
             // ReSharper disable once UnusedMember.Local
@@ -121,15 +105,14 @@ namespace Needle.PackageTools
             }
         }
 
-        public class RootPathPatch : EditorPatch
+        public class RootPathPatch
         {
-            protected override Task OnGetTargetMethods(List<MethodBase> targetMethods)
+            public static void Patch(Harmony harmony)
             {
                 var asm = Helpers.GetAssetStoreToolsAssembly();
-                if (asm == null) return Task.CompletedTask;
+                if (asm == null) return;
                 var m = asm.GetType("AssetStorePackageController").GetMethod("SetRootPath", (BindingFlags) (-1));
-                targetMethods.Add(m);
-                return Task.CompletedTask;
+                harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(RootPathPatch), "Prefix")));
             }
 
             // ReSharper disable once UnusedMember.Local
@@ -166,18 +149,16 @@ namespace Needle.PackageTools
         }
 
         // private string[] GetGUIDS(bool includeProjectSettings)
-        public class GetGUIDsPatch : EditorPatch
+        public class GetGUIDsPatch
         {
-            protected override Task OnGetTargetMethods(List<MethodBase> targetMethods)
+            public static void Patch(Harmony harmony)
             {
                 var asm = Helpers.GetAssetStoreToolsAssembly();
-                if (asm == null) return Task.CompletedTask;
+                if (asm == null) return;
                 var m = asm.GetType("AssetStorePackageController").GetMethod("GetGUIDS", (BindingFlags) (-1));
-                targetMethods.Add(m);
-                return Task.CompletedTask;
+                harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(GetGUIDsPatch), "Prefix")));
             }
 
-            
             class PackageInfoMock
             {
                 public string name;
@@ -190,8 +171,6 @@ namespace Needle.PackageTools
                 var m_LocalRootPath = __instance.GetType().GetField("m_LocalRootPath", (BindingFlags) (-1));
                 if (m_LocalRootPath == null) return true;
                 var localRootPath = m_LocalRootPath.GetValue(__instance) as string;
-
-                // Helpers.Log(localRootPath + ", " + Application.dataPath);
 
                 if (!string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID("Assets/" + localRootPath)))
                     return true;

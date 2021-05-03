@@ -1,9 +1,9 @@
 {
     "name": "Unity.InternalAPIEditorBridge.011",
+    "rootNamespace": "",
     "references": [
         "needle.EditorPatching"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -11,8 +11,11 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "AssetStoreTools.dll"
+        "AssetStoreTools.dll",
+        "Needle.PackageTools.AssetStore.Harmony.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
