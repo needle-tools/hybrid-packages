@@ -1,7 +1,7 @@
 {
 	"displayName": "UPM Packages in .unitypackage",
 	"name": "com.needle.upm-in-unitypackage",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"unity": "2018.4",
 	"description": "Export UPM packages as .unitypackage files and upload them to the AssetStore",
 	"author": {
@@ -11,5 +11,12 @@
 	  },
 	"category": "Libraries",
 	"dependencies": {
-	}
+	},
+	"samples": [
+		{
+			"displayName": "Asset Store Upload Config",
+			"description":"Example for uploading multiple assets/folders/packages to the Asset Store.",
+			"path": "Samples~/Asset Store Upload Config"
+		}
+	]
 }

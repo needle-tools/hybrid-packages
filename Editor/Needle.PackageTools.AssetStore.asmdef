@@ -1,9 +1,7 @@
 {
     "name": "Unity.InternalAPIEditorBridge.011",
     "rootNamespace": "",
-    "references": [
-        "needle.EditorPatching"
-    ],
+    "references": [],
     "includePlatforms": [
         "Editor"
     ],

@@ -183,10 +183,15 @@ namespace Needle.PackageTools
                     var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new string[] {"Assets/" + localRootPath});
                     if(configs.Any())
                     {
-                        Debug.Log("Upload Config detected. The selected path will be ignored, and the upload config will be used instead.");
-                        var uploadConfig = AssetDatabase.LoadAssetAtPath<AssetStoreUploadConfig>(AssetDatabase.GUIDToAssetPath(configs.First()));
-                        if(uploadConfig && uploadConfig.IsValid)
+                        var configPath = AssetDatabase.GUIDToAssetPath(configs.First());
+                        var uploadConfig = AssetDatabase.LoadAssetAtPath<AssetStoreUploadConfig>(configPath);
+                        Debug.Log("Upload Config detected. The selected path will be ignored, and the upload config will be used instead.", uploadConfig);
+                        
+                        if(uploadConfig)
                         {
+                            if (!uploadConfig.IsValid)
+                                throw new System.ArgumentException("The selected upload config at " + configPath + " is not valid.");
+                            
                             foreach (var path in uploadConfig.GetExportPaths())
                             {
                                 AddChildrenToResults(path);

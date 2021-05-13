@@ -12,21 +12,16 @@ namespace Needle.PackageTools
     [CreateAssetMenu(menuName = "Needle/Asset Store Upload Config")]
     public class AssetStoreUploadConfig : ScriptableObject
     {
-        public List<Object> folders;
+        public List<Object> items;
         
-        public bool IsValid => folders != null && folders.Any();
-
-        [MenuItem("Needle/Show Data Type for Selected")]
-        static void ShowDataType()
-        {
-            Debug.Log(string.Join("\n", Selection.objects.Select(x => x + " " + x.GetType())));
-        }
+        public bool IsValid => items != null && items.Any();
 
         public string[] GetExportPaths()
         {
-            HashSet<string> exportPaths = new HashSet<string>();
+            if (items == null || !items.Any()) return new string[] { };
             
-            foreach (var folder in folders)
+            HashSet<string> exportPaths = new HashSet<string>();
+            foreach (var folder in items)
             {
                 var actualExport = GetActualExportObject(folder);
                 if(actualExport)
@@ -73,13 +68,15 @@ namespace Needle.PackageTools
         private void OnEnable()
         {
             var t = target as AssetStoreUploadConfig;
-            itemList = new ReorderableList(serializedObject, serializedObject.FindProperty("folders"), true, false, true, true);
+            if (!t) return;
+            
+            itemList = new ReorderableList(serializedObject, serializedObject.FindProperty(nameof(AssetStoreUploadConfig.items)), true, false, true, true);
             itemList.elementHeight = 60;
             itemList.drawElementCallback += (rect, index, active, focused) =>
             {
                 var selectedObject = itemList.serializedProperty.GetArrayElementAtIndex(index);
                 rect.height = 20;
-                EditorGUI.PropertyField(rect, selectedObject, new GUIContent("File"));
+                EditorGUI.PropertyField(rect, selectedObject, new GUIContent("Item"));
                 rect.y += 20;
                 var actuallyExportedObject = t.GetActualExportObject(itemList.serializedProperty.GetArrayElementAtIndex(index).objectReferenceValue);
                 if(selectedObject.objectReferenceValue != actuallyExportedObject)
@@ -105,6 +102,8 @@ namespace Needle.PackageTools
         public override void OnInspectorGUI()
         {
             var t = target as AssetStoreUploadConfig;
+            if (!t) return;
+            
             EditorGUILayout.LabelField(new GUIContent("Selection", "Select all root folders and assets that should be exported. For packages, select the package.json."), EditorStyles.boldLabel);
             itemList.DoLayoutList();
             serializedObject.ApplyModifiedProperties();
