@@ -172,13 +172,33 @@ namespace Needle.PackageTools
                 if (m_LocalRootPath == null) return true;
                 var localRootPath = m_LocalRootPath.GetValue(__instance) as string;
 
+                List<string> results = new List<string>();
+                
+                // find the config inside this folder
+                var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new string[] {"Assets/" + localRootPath});
+                if(configs.Any())
+                {
+                    Debug.Log("Upload Config detected. The selected path will be ignored, and the upload config will be used instead.");
+                    var uploadConfig = AssetDatabase.LoadAssetAtPath<AssetStoreUploadConfig>(AssetDatabase.GUIDToAssetPath(configs.First()));
+                    if(uploadConfig && uploadConfig.IsValid)
+                    {
+                        foreach (var path in uploadConfig.GetExportPaths())
+                        {
+                            AddChildrenToResults(path);
+                        }
+                        
+                        __result = results.ToArray();
+                        // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath))); 
+                        return false;
+                    }
+                }
+                
                 if (!string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID("Assets/" + localRootPath)))
                     return true;
 
                 if (string.IsNullOrEmpty(localRootPath) || localRootPath.Equals("/", StringComparison.Ordinal))
                     return true;
 
-                
                 // localRootPath is now project-relative, so not a package folder...
                 // We need to figure out if it's a proper package folder here, or already convert the path way earlier
                 // For now, we'll just check if any project package has this as resolved path
@@ -225,13 +245,27 @@ namespace Needle.PackageTools
                     }
                 }
 
-                string[] collection = new string[0];
-                var children = AssetDatabase.CollectAllChildren(AssetDatabase.AssetPathToGUID(assetDbPath), collection);
+                void AddChildrenToResults(string assetPath)
+                {
+                    if (File.Exists(assetPath))
+                    {
+                        results.Add(AssetDatabase.AssetPathToGUID(assetPath));
+                        return;
+                    }
+                    
+                    string[] collection = new string[0];
+                    var children = AssetDatabase.CollectAllChildren(AssetDatabase.AssetPathToGUID(assetPath), collection);
 
-                if (!children.Any())
-                    throw new NullReferenceException(Helpers.LogPrefix + "Seems you're trying to export something that's not in your AssetDatabase: " + assetDbPath + " - this can't be exported as .unitypackage.");
+                    if (!children.Any())
+                        throw new NullReferenceException(Helpers.LogPrefix + "Seems you're trying to export something that's not in your AssetDatabase: " + assetPath + " - this can't be exported as .unitypackage.");
 
-                __result = children;
+                    results.AddRange(children);
+                }
+
+                AddChildrenToResults(assetDbPath);
+                
+                __result = results.Distinct().ToArray();
+                // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath)));
                 return false;
             }
         }
