@@ -1,22 +1,21 @@
 {
-	"displayName": "UPM Packages in .unitypackage",
-	"name": "com.needle.upm-in-unitypackage",
-	"version": "0.4.0",
-	"unity": "2018.4",
-	"description": "Export UPM packages as .unitypackage files and upload them to the AssetStore",
-	"author": {
-		"name": "Needle",
-		"email": "contact@needle.tools",
-		"url": "https://needle.tools"
-	  },
-	"category": "Libraries",
-	"dependencies": {
-	},
-	"samples": [
-		{
-			"displayName": "Asset Store Upload Config",
-			"description":"Example for uploading multiple assets/folders/packages to the Asset Store.",
-			"path": "Samples~/Asset Store Upload Config"
-		}
-	]
+  "displayName": "Hybrid Packages",
+  "name": "com.needle.upm-in-unitypackage",
+  "version": "0.4.0",
+  "unity": "2018.4",
+  "description": "Export UPM packages as .unitypackage files and upload them to the AssetStore",
+  "author": {
+    "name": "Needle",
+    "email": "contact@needle.tools",
+    "url": "https://needle.tools"
+  },
+  "category": "Libraries",
+  "samples": [
+    {
+      "displayName": "Asset Store Upload Config",
+      "description": "Example for uploading multiple assets/folders/packages to the Asset Store.",
+      "path": "Samples~/Asset Store Upload Config"
+    }
+  ],
+  "type": "library"
 }
