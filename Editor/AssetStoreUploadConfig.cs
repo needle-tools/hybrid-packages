@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
@@ -27,7 +28,9 @@ namespace Needle.PackageTools
             
             foreach (var folder in folders)
             {
-                exportPaths.Add(AssetDatabase.GetAssetPath(GetActualExportObject(folder)));
+                var actualExport = GetActualExportObject(folder);
+                if(actualExport)
+                    exportPaths.Add(AssetDatabase.GetAssetPath(actualExport));
             }
 
             return exportPaths.ToArray();
@@ -43,8 +46,18 @@ namespace Needle.PackageTools
             {
                 path = path.Substring("Packages/".Length);
                 var indexOfSlash = path.IndexOf("/", StringComparison.Ordinal);
-                path = path.Substring(0, indexOfSlash);
-                path = "Packages/" + path;
+                var packageName = path.Substring(0, indexOfSlash);
+                path = "Packages/" + packageName;
+                
+                // sanitize: do not allow uploading packages that are in the Library
+                var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
+                if (Path.GetFullPath(path).StartsWith(libraryRoot, StringComparison.Ordinal))
+                    return null;
+                
+                // sanitize: do not allow re-uploading of Unity-scoped packages
+                if (packageName.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
+                    return null;
+                
                 return AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
             }
 
@@ -70,10 +83,17 @@ namespace Needle.PackageTools
                 rect.y += 20;
                 var actuallyExportedObject = t.GetActualExportObject(itemList.serializedProperty.GetArrayElementAtIndex(index).objectReferenceValue);
                 if(selectedObject.objectReferenceValue != actuallyExportedObject)
-                { 
-                    EditorGUI.ObjectField(rect, "Exported", actuallyExportedObject, typeof(Object), false);
-                    rect.y += 20;
-                    EditorGUI.LabelField(rect, "The entire Package will be exported.", EditorStyles.miniLabel);
+                {
+                    if (!actuallyExportedObject)
+                    {
+                        EditorGUI.HelpBox(rect, "This file/package can't be exported.", MessageType.Error);
+                    }
+                    else
+                    {
+                        EditorGUI.ObjectField(rect, "Exported", actuallyExportedObject, typeof(Object), false);
+                        rect.y += 20;
+                        EditorGUI.LabelField(rect, "The entire Package will be exported.", EditorStyles.miniLabel);
+                    }
                 }
                 else
                 {

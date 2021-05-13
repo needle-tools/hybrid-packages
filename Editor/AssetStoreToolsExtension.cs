@@ -172,31 +172,34 @@ namespace Needle.PackageTools
                 if (m_LocalRootPath == null) return true;
                 var localRootPath = m_LocalRootPath.GetValue(__instance) as string;
 
+                if (string.IsNullOrEmpty(localRootPath) || localRootPath.Equals("/", StringComparison.Ordinal))
+                    return true;
+
                 List<string> results = new List<string>();
-                
-                // find the config inside this folder
-                var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new string[] {"Assets/" + localRootPath});
-                if(configs.Any())
+
+                if (Directory.Exists("Assets/" + localRootPath) && !localRootPath.StartsWith("/.."))
                 {
-                    Debug.Log("Upload Config detected. The selected path will be ignored, and the upload config will be used instead.");
-                    var uploadConfig = AssetDatabase.LoadAssetAtPath<AssetStoreUploadConfig>(AssetDatabase.GUIDToAssetPath(configs.First()));
-                    if(uploadConfig && uploadConfig.IsValid)
+                    // find the config inside this folder
+                    var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new string[] {"Assets/" + localRootPath});
+                    if(configs.Any())
                     {
-                        foreach (var path in uploadConfig.GetExportPaths())
+                        Debug.Log("Upload Config detected. The selected path will be ignored, and the upload config will be used instead.");
+                        var uploadConfig = AssetDatabase.LoadAssetAtPath<AssetStoreUploadConfig>(AssetDatabase.GUIDToAssetPath(configs.First()));
+                        if(uploadConfig && uploadConfig.IsValid)
                         {
-                            AddChildrenToResults(path);
+                            foreach (var path in uploadConfig.GetExportPaths())
+                            {
+                                AddChildrenToResults(path);
+                            }
+                            
+                            __result = results.ToArray();
+                            // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath))); 
+                            return false;
                         }
-                        
-                        __result = results.ToArray();
-                        // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath))); 
-                        return false;
                     }
                 }
                 
                 if (!string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID("Assets/" + localRootPath)))
-                    return true;
-
-                if (string.IsNullOrEmpty(localRootPath) || localRootPath.Equals("/", StringComparison.Ordinal))
                     return true;
 
                 // localRootPath is now project-relative, so not a package folder...
@@ -239,6 +242,16 @@ namespace Needle.PackageTools
                 if (packageInfo != null)
                 {
                     assetDbPath = "Packages/" + packageInfo.name;
+                    
+                    // sanitize: do not allow uploading packages that are in the Library
+                    var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
+                    if (Path.GetFullPath(assetDbPath).StartsWith(libraryRoot, StringComparison.Ordinal))
+                        throw new ArgumentException("You're trying to export a package from your Libary folder. This is not allowed. Only local/embedded packages can be exported.");
+                
+                    // sanitize: do not allow re-uploading of Unity-scoped packages
+                    if (packageInfo.name.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
+                        throw new ArgumentException("You're trying to export a package from the Unity registry. This is not allowed.");
+                    
                     if (includeProjectSettings)
                     {
                         Helpers.LogWarning("You're exporting a package - please note that project settings won't be included!");
