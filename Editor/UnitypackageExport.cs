@@ -197,7 +197,13 @@ namespace Needle.PackageTools
 
             if(IncludePreviewImages && isFile && !extensionsWithoutThumbnails.Contains(Path.GetExtension(pathToFileOrDirectory).ToLowerInvariant()))
             {
+#if UNITY_2020_1_OR_NEWER
                 var preview = AssetPreview.GetAssetPreviewFromGUID(guid);
+#else
+                var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = string.IsNullOrEmpty(assetPath) ? null : AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath);
+                var preview = asset ? AssetPreview.GetAssetPreview(asset) : default;
+#endif
                 if (preview)
                 {
                     var thumbnailWidth = Mathf.Min(preview.width, 128);

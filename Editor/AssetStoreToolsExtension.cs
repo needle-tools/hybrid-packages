@@ -182,6 +182,9 @@ namespace Needle.PackageTools
 
                 List<string> results = new List<string>();
 
+                if (localRootPath.StartsWith("/", StringComparison.Ordinal))
+                    localRootPath = localRootPath.Substring("/".Length);
+                
                 if (Directory.Exists("Assets/" + localRootPath) && !localRootPath.StartsWith("/.."))
                 {
                     // find the config inside this folder
@@ -369,7 +372,9 @@ namespace Needle.PackageTools
                                 {
                                     var ignore = new Ignore();
                                     ignore.Add(File.ReadAllLines(file.FullName).Where(x => !string.IsNullOrWhiteSpace(x.Trim()) && !x.TrimStart().StartsWith("#", StringComparison.Ordinal)));
-                                    ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), ignore));
+                                    var fileDirectory = file.Directory;
+                                    if(fileDirectory != null)
+                                        ignoreFiles.Add((fileDirectory.FullName.Replace("\\", "/"), ignore));
                                 }
                             }
                             catch (IOException)
