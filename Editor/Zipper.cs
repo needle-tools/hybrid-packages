@@ -7,23 +7,6 @@ namespace Needle.PackageTools
 {
 	public static class Zipper
 	{
-		// [InitializeOnLoadMethod]
-		[MenuItem("Tgz/Zip package")]
-		private static void Zip()
-		{
-			// Client.GetCachedPackages()
-
-			var target = @"C:\Users\wiessler\Downloads\tesgt\out\arsim.tgz";
-			// if (TryCreateTgz(@"C:\Users\wiessler\Downloads\tesgt\archtemp", @"C:\git\npm\development\PackagePlayground-2020.3\Packages/test.tgz"))
-			if (TryCreateUnityPackageForPackage(@"C:\git\npm\development\ar-simulation\package", "arsim", target))
-			{
-				Debug.Log("Did zip");
-				// File.Move(target, Path.ChangeExtension(target, "unitypackage"));
-			}
-			else
-				Debug.Log("Did not zip");
-		}
-
 		public static bool TryCreateUnityPackageForPackage(string packageDirectory, string packageName, string targetPath)
 		{
 			var temp = Path.GetTempPath() + "/" + packageName;
@@ -84,14 +67,20 @@ namespace Needle.PackageTools
 				return res ?? -1;
 			}
 
+			// Command line syntax:
+			// https://sevenzip.osdn.jp/chm/cmdline/syntax.htm
+			
+			// Compression switches:
+			// https://sevenzip.osdn.jp/chm/cmdline/switches/method.htm
+			
 			var files = directoryPath + "/*"; // string.Join(" ", filenames.Select(f => "\"" + f.Replace("\\", "/") + "\"").ToArray());
 			var tarPath = Path.GetDirectoryName(outputFilePath) + "/archtemp.tar";
 			if (File.Exists(tarPath)) File.Delete(tarPath);
-			var args_tar = $"a -t7z \"{tarPath}\" \"{files}\" -mx=9";
+			var args_tar = $"a -ttar \"{tarPath}\" \"{files}\"";
 			var code = RunWith(args_tar);
 			if (code == 0)
 			{
-				var args_tgz = $"a \"{outputFilePath}\" \"{tarPath}\"";
+				var args_tgz = $"a -tgzip \"{outputFilePath}\" \"{tarPath}\" -mx9";
 				if (File.Exists(outputFilePath)) File.Delete(outputFilePath);
 				code = RunWith(args_tgz);
 				if (DebugLog)

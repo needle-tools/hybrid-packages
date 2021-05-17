@@ -4,10 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering.VirtualTexturing;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Needle.PackageTools
@@ -48,17 +45,93 @@ namespace Needle.PackageTools
             return Application.dataPath + "/" + fileName;
         }
 
-        [MenuItem("Test/Export package files")]
-        private static void ExportTest()
-        {
-            var dir = @"C:\Users\wiessler\AppData\Local\Temp\test";
-            AddToUnityPackage(@"C:\git\npm\development\PackagePlayground-2020.3\Assets\PackageToolsTesting\AssetReference\TestMaterial.mat", dir);
-            AddToUnityPackage(@"C:\git\npm\development\editorpatching\modules\unity-demystify\package\Documentation~\beforeafter.jpg", dir);
-            var package = dir + "/package.unitypackage";
-            Zipper.TryCreateTgz(dir, package);
-            EditorUtility.RevealInFinder(package);
-        }
+        // [MenuItem("Test/Export package files")]
+        // private static void ExportTest()
+        // {
+        //     var dir = @"C:\Users\wiessler\AppData\Local\Temp\test";
+        //     AddToUnityPackage(@"C:\git\npm\development\PackagePlayground-2020.3\Assets\PackageToolsTesting\AssetReference\TestMaterial.mat", dir);
+        //     AddToUnityPackage(@"C:\git\npm\development\editorpatching\modules\unity-demystify\package\Documentation~\beforeafter.jpg", dir);
+        //     var package = dir + "/package.unitypackage";
+        //     Zipper.TryCreateTgz(dir, package);
+        //     EditorUtility.RevealInFinder(package);
+        // }
 
+        // [MenuItem("Test/Scan Folder for preview.png")]
+        // private static void ScanFolder()
+        // {
+        //     var path = EditorUtility.OpenFolderPanel("Select unpacked unitypackage root", "", "");
+        //     if (!string.IsNullOrEmpty(path))
+        //     {
+        //         var di = new DirectoryInfo(path);
+        //         
+        //         var distinctExtensionsWithPreview = di.GetDirectories("*", SearchOption.TopDirectoryOnly)
+        //             .Where(x => x.GetFiles("preview.png").Any())
+        //             .Select(x => File.ReadAllText(x.GetFiles("pathname").First().FullName))
+        //             .Select(Path.GetExtension)
+        //             .Distinct();
+        //         
+        //         var distinctExtensionsWithoutPreview = di.GetDirectories("*", SearchOption.TopDirectoryOnly)
+        //             .Where(x => !x.GetFiles("preview.png").Any())
+        //             .Select(x => File.ReadAllText(x.GetFiles("pathname").First().FullName))
+        //             .Select(Path.GetExtension)
+        //             .Distinct();
+        //         
+        //         Debug.Log("Extensions with preview.png files:\n" + string.Join("\n", distinctExtensionsWithPreview));
+        //         Debug.Log("Extensions without preview.png files:\n" + string.Join("\n", distinctExtensionsWithoutPreview));
+        //     }
+        // }
+
+        private static bool IncludePreviewImages = true;
+        
+        // TODO figure out a better way / find someone who knows which assets actually get preview.png generated
+        // derived experimentally for now by exporting a giant .unitypackage from an entire project and checking what happens.
+        // reason for a block list and not an allow list: ScriptedImporters can be for anything.
+        private static string[] extensionsWithoutThumbnails = new string[]
+        {
+            ".shader",
+            ".cs",
+            ".anim",
+            ".unity",
+            ".asset",
+            ".playable",
+            ".lighting",
+            ".usdc",
+            ".txt",
+            ".asmdef",
+            ".asmref",
+            ".bundle",
+            ".controller",
+            ".dll",
+            ".md",
+            ".xml",
+            ".json",
+            ".txt",
+            ".manifest",
+            ".jslib",
+            ".java",
+            ".ttf",
+            ".exp",
+            ".usdz",
+            ".mtl",
+            ".fbx",
+            ".fbm",
+            ".pdb",
+            ".usd",
+            ".prefab",
+            ".assbin",
+            ".mm",
+            ".iobj",
+            ".lib",
+            ".overrideController",
+            ".so",
+            ".plist",
+            ".zip",
+            ".7z",
+            ".unitypackage",
+            ".ipdb",
+            ".url"
+        };
+        
         public static void AddToUnityPackage(string pathToFileOrDirectory, string targetDir)
         {
             if (!File.Exists(pathToFileOrDirectory) && !Directory.Exists(pathToFileOrDirectory))
@@ -72,7 +145,7 @@ namespace Needle.PackageTools
             }
 
             var isFile = File.Exists(pathToFileOrDirectory);
-            if (pathToFileOrDirectory.EndsWith(".meta")) return;
+            if (pathToFileOrDirectory.EndsWith(".meta", StringComparison.Ordinal)) return;
             var metaPath = pathToFileOrDirectory + ".meta";
             var guid = default(string);
             var hasMetaFile = File.Exists(metaPath);
@@ -83,7 +156,7 @@ namespace Needle.PackageTools
                     var line = reader.ReadLine();
                     while(line != null)
                     {
-                        if (line.StartsWith("guid:"))
+                        if (line.StartsWith("guid:", StringComparison.Ordinal))
                         {
                             guid = line.Substring("guid:".Length).Trim();
                             break;
@@ -109,7 +182,7 @@ namespace Needle.PackageTools
             pathToFileOrDirectory = pathToFileOrDirectory.Replace("\\", "/");
             var projectPath = Path.GetFullPath(Application.dataPath + "/../").Replace("\\", "/");
             var relPath = pathToFileOrDirectory;
-            if (relPath.StartsWith(projectPath)) relPath = relPath.Substring(projectPath.Length);
+            if (relPath.StartsWith(projectPath, StringComparison.Ordinal)) relPath = relPath.Substring(projectPath.Length);
 
             var outDir = targetDir + "/" + guid;
             if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
@@ -119,18 +192,31 @@ namespace Needle.PackageTools
             if(isFile) File.Copy(pathToFileOrDirectory, outDir + "/asset", true);
             if (hasMetaFile) File.Copy(metaPath, outDir + "/asset.meta", true);
 
-            var preview = AssetPreview.GetAssetPreviewFromGUID(guid);
-            // var icon = AssetDatabase.GetCachedIcon(relPath) as Texture2D;
-            // this is e.g. icon for material, not what we want
-            // if (!icon) icon = InternalEditorUtility.GetIconForFile(relPath);
-            if (preview)
+            if(IncludePreviewImages && isFile && !extensionsWithoutThumbnails.Contains(Path.GetExtension(pathToFileOrDirectory).ToLowerInvariant()))
             {
-                var copy = new Texture2D(preview.width, preview.height, preview.format, false);//, preview.graphicsFormat, preview.mipmapCount, TextureCreationFlags.None);
-                Graphics.CopyTexture(preview, 0, 0, copy, 0, 0);
-                var bytes = copy.EncodeToPNG();
-                if (bytes != null && bytes.Length > 0)
+                var preview = AssetPreview.GetAssetPreviewFromGUID(guid);
+                if (preview)
                 {
-                    File.WriteAllBytes(outDir + "/preview.png", bytes);
+                    var thumbnailWidth = Mathf.Min(preview.width, 128);
+                    var thumbnailHeight = Mathf.Min(preview.height, 128);
+                    var rt = RenderTexture.GetTemporary(thumbnailWidth, thumbnailHeight, 0, RenderTextureFormat.Default, RenderTextureReadWrite.sRGB);
+                
+                    var copy = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false);//, preview.graphicsFormat, preview.mipmapCount, TextureCreationFlags.None);
+                
+                    RenderTexture.active = rt;
+                    GL.Clear(true, true, new Color(0, 0, 0, 0));
+                    Graphics.Blit(preview, rt);
+                    copy.ReadPixels(new Rect(0, 0, copy.width, copy.height), 0, 0, false);
+                    copy.Apply();
+                    RenderTexture.active = null;
+                    
+                    var bytes = copy.EncodeToPNG();
+                    if (bytes != null && bytes.Length > 0)
+                    {
+                        File.WriteAllBytes(outDir + "/preview.png", bytes);
+                    }
+                    
+                    RenderTexture.ReleaseTemporary(rt);
                 }
             }
         }

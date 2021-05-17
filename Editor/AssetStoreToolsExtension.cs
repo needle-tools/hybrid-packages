@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using HarmonyLib;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Assembly = System.Reflection.Assembly;
 using Debug = UnityEngine.Debug;
 
@@ -185,7 +184,7 @@ namespace Needle.PackageTools
                 if (Directory.Exists("Assets/" + localRootPath) && !localRootPath.StartsWith("/.."))
                 {
                     // find the config inside this folder
-                    var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new string[] {"Assets/" + localRootPath});
+                    var configs = AssetDatabase.FindAssets("t:AssetStoreUploadConfig", new [] {"Assets/" + localRootPath});
                     if(configs.Any())
                     {
                         var configPath = AssetDatabase.GUIDToAssetPath(configs.First());
@@ -195,7 +194,7 @@ namespace Needle.PackageTools
                         if(uploadConfig)
                         {
                             if (!uploadConfig.IsValid)
-                                throw new System.ArgumentException("The selected upload config at " + configPath + " is not valid.");
+                                throw new ArgumentException("The selected upload config at " + configPath + " is not valid.");
                             
                             foreach (var path in uploadConfig.GetExportPaths())
                             {
@@ -309,56 +308,112 @@ namespace Needle.PackageTools
             private static bool Prefix(string[] guids, string fileName, bool needsPackageManagerManifest)
             {
                 // we want to patch this if there's packages in here
-                var anyFileInPackages = guids.Select(AssetDatabase.GUIDToAssetPath).Any(x => x.StartsWith("Packages"));
+                var anyFileInPackages = guids.Select(AssetDatabase.GUIDToAssetPath).Any(x => x.StartsWith("Packages/", StringComparison.Ordinal));
 
                 if (anyFileInPackages && needsPackageManagerManifest)
                     throw new ArgumentException("When exporting Hybrid Packages, please don't enable the \"Include Dependencies\" option. Specify dependencies via package.json.");
 
+                // custom package export - constructing .unitypackage while respecting AssetDatabase,
+                // hidden top-level folders (end with ~) and .npmignore/.gitignore
                 if (anyFileInPackages)
                 {
-                    // we want to do custom packing here.
-                    // TODO respect .gitignore and .npmignore; those might apply to files in Samples~ and/or Documentation~ as well.
+                    Profiler.BeginSample("Collect Package Roots");
                     
                     // get all packages we want to export
-                    HashSet<string> packageRoots = new HashSet<string>();
+                    var packageRoots = new HashSet<string>();
                     
-                    // These are project-relative paths, not absolute paths
-                    HashSet<string> exportPaths = new HashSet<string>();
+                    // the resulting project-relative paths (not absolute paths)
+                    var exportPaths = new HashSet<string>();
 
                     // all the currently selected files from AssetDB should be exported anyways
                     var assetDatabasePaths = guids.Select(AssetDatabase.GUIDToAssetPath).ToList();
                     foreach (var p in assetDatabasePaths)
                         exportPaths.Add(p);
-                    
+
                     foreach (var path0 in assetDatabasePaths)
                     {
                         var path = path0;
-                        if (path.StartsWith("Packages/", StringComparison.Ordinal))
-                        {
-                            path = path.Substring("Packages/".Length);
-                            var indexOfSlash = path.IndexOf("/", StringComparison.Ordinal);
-                            var packageName = path.Substring(0, indexOfSlash);
-                            path = "Packages/" + packageName;
-                            if(!packageRoots.Contains(path))
-                                packageRoots.Add(path);
-                        }
+                        if (!path.StartsWith("Packages/", StringComparison.Ordinal)) continue;
+                        
+                        path = path.Substring("Packages/".Length);
+                        var indexOfSlash = path.IndexOf("/", StringComparison.Ordinal);
+                        var packageName = path.Substring(0, indexOfSlash);
+                        path = "Packages/" + packageName;
+                        
+                        if(!packageRoots.Contains(path))
+                            packageRoots.Add(path);
                     }
+                    Profiler.EndSample();
 
                     #region Handle file ignore
+                    
                     var ignoreFiles = new List<(string dir, string content)>();
                     
                     // collect npm and gitignore files in all subdirectories
                     void CollectIgnoreFiles(string directory)
                     {
+                        Profiler.BeginSample(nameof(CollectIgnoreFiles));
                         ignoreFiles.Clear();
-                        foreach (var file in new DirectoryInfo(directory).GetFiles("*", SearchOption.AllDirectories))
+
+                        var di = new DirectoryInfo(directory);
+
+                        void AddToIgnore(List<(string dir, string content)> ignoreList, string searchPattern, SearchOption searchOption)
                         {
-                            if(file.Name.EndsWith(".npmignore") || file.Name.EndsWith(".gitignore")) 
-                                ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), File.ReadAllText(file.FullName)));
+                            try
+                            {
+                                foreach (var file in di.GetFiles(searchPattern, searchOption))
+                                    ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), File.ReadAllText(file.FullName)));
+                            }
+                            catch (IOException)
+                            {
+                                // ignore
+                            }
                         }
+                        
+                        // find all ignore files in subdirectories
+                        AddToIgnore(ignoreFiles, ".gitignore", SearchOption.AllDirectories);
+                        AddToIgnore(ignoreFiles, ".npmignore", SearchOption.AllDirectories);
+
+                        var upwardsIgnoreFiles = new List<(string, string)>();
+                        bool folderIsInsideGitRepository = false;
+
+                        try
+                        {
+                            // find ignore files up to directory root or until a .git folder is found
+                            while (di.Parent != null)
+                            {
+                                di = di.Parent;
+
+                                AddToIgnore(upwardsIgnoreFiles, ".gitignore", SearchOption.TopDirectoryOnly);
+                                AddToIgnore(upwardsIgnoreFiles, ".npmignore", SearchOption.TopDirectoryOnly);
+
+                                // we should stop at a git repo (.git folder) or a submodule (.git file)
+                                if (di.GetDirectories(".git", SearchOption.TopDirectoryOnly).Any() ||
+                                    di.GetFiles(".git", SearchOption.TopDirectoryOnly).Any())
+                                {
+                                    folderIsInsideGitRepository = true;
+                                    break;
+                                }
+                            }
+                        }
+                        catch (IOException)
+                        {
+                            folderIsInsideGitRepository = false;
+                            upwardsIgnoreFiles.Clear();
+                        }
+
+                        // if we found any upwards git folder we add those ignore files to our list here, otherwise
+                        // let's assume this isn't inside a git repo and we shouldn't look at those.
+                        if (folderIsInsideGitRepository)
+                            ignoreFiles.AddRange(upwardsIgnoreFiles);
+                        
+                        Profiler.EndSample();
                     }
+                    
                     bool IsIgnored(string filePath)
                     {
+                        Profiler.BeginSample(nameof(IsIgnored));
+                        
                         filePath = filePath.Replace("\\", "/");
                         foreach (var ig in ignoreFiles)
                         {
@@ -374,58 +429,78 @@ namespace Needle.PackageTools
                                     if (Regex.Match(filePath, line).Success)
                                     {
                                         Debug.Log("<b>IGNORE</b> " + filePath);
+                                        Profiler.EndSample();
                                         return true;
                                     }
                                 }
                             }
                         }
+                        
+                        Profiler.EndSample();
                         return false;
                     }
+                    
                     #endregion
                     
                     foreach (var root in packageRoots)
                     {
+                        Profiler.BeginSample("Collect Files in Package Root: " + root);
+                        
                         var fullPath = Path.GetFullPath(root);
                         CollectIgnoreFiles(root);
-                            
+                        
+                        // include all hidden directories (end with ~)
                         foreach (var directory in new DirectoryInfo(root).GetDirectories("*", SearchOption.AllDirectories))
                         {
-                            // this is a hidden folder. We want to include it in our export to catch
-                            // - Samples~
-                            // - Documentation~
-                            // - Templates~
-                            // and so on.
-                            if (directory.Name.EndsWith("~", StringComparison.Ordinal))
+                            try
                             {
-                                // add all files in this directory
-                                foreach (var file in directory.GetFiles("*", SearchOption.AllDirectories))
+                                // this is a hidden folder. We want to include it in our export to catch
+                                // - Samples~
+                                // - Documentation~
+                                // - Templates~
+                                // and so on.
+                                if (directory.Name.EndsWith("~", StringComparison.Ordinal))
                                 {
-                                    if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
-                                        continue;
+                                    // add all files in this directory
+                                    foreach (var file in directory.GetFiles("*", SearchOption.AllDirectories))
+                                    {
+                                        if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                                            continue;
 
-                                    if (IsIgnored(file.FullName)) continue;
-                                    
-                                    var projectRelativePath = file.FullName.Replace(fullPath, root);
-                                    exportPaths.Add(projectRelativePath);
+                                        if (IsIgnored(file.FullName)) continue;
+
+                                        var projectRelativePath = file.FullName.Replace(fullPath, root);
+                                        exportPaths.Add(projectRelativePath);
+                                    }
                                 }
                             }
+                            catch (IOException)
+                            {
+                                // 
+                            }
                         }
+                        
+                        Profiler.EndSample();
                     }
                     
                     // Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", exportPaths));
                     
+                    Profiler.BeginSample("Create .unitypackage");
                     var dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/Unity/AssetStoreTools/Export";
                     foreach(var path in exportPaths)
                         UnitypackageExporter.AddToUnityPackage(path, dir);
                     if (!Zipper.TryCreateTgz(dir, fileName))
+                    {
+                        Profiler.EndSample();
                         throw new Exception("Failed creating .unitypackage " + fileName);
+                    }
                     EditorUtility.RevealInFinder(fileName);
                     Directory.Delete(dir, true);
-                    // EditorUtility.RevealInFinder(dir);
+                    Profiler.EndSample();
                     return false;
                 }
                 
-                Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", guids.Select(AssetDatabase.GUIDToAssetPath)));
+                // Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", guids.Select(AssetDatabase.GUIDToAssetPath)));
                 return true;
             }
         }
