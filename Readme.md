@@ -59,6 +59,19 @@ The resulting .unitypackage files _do not require any additional setup for users
 2. Make sure "include dependencies" is off - you can now specify them through your package.json!
 3. Press <kbd>Upload</kbd>
 
+#### Multiple Packages
+The AssetStoreTools only allow selecting one root folder.  
+As a workaround, you can create an "Upload Config" that specifies multiple packages / root folders to upload.  
+
+The basic flow is:  
+
+1. Create a folder for your "package collection" in Assets, e.g. "My Package Collection".
+2. In that folder, right click and create a `Needle/Asset Store Upload Config`.
+3. Add entries to the `Selection`" array and drag the folders/files into the `Item` field. For packages, drag in the `package.json` since package folders can't be drag-dropped.
+4. Open <kbd>Asset Store Tools/Package Upload</kbd>
+1. Press <kbd>Select</kbd> and select the directory that contains your upload config, e.g. "My Package Collection"
+3. Press <kbd>Upload</kbd>
+
 ## Known Issues / Limitations
 - The optional <kbd>Validate</kbd> step isn't supported yet. Export your package via <kbd>Right Click/Export Package</kbd> and test in a separate project for now.
 - Dependencies into other packages shouldn't be exported, so it's recommended to turn off "Include Dependencies" when exporting a package.
