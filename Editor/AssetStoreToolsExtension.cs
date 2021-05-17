@@ -252,15 +252,18 @@ namespace Needle.PackageTools
                 {
                     assetDbPath = "Packages/" + packageInfo.name;
                     
-                    // sanitize: do not allow uploading packages that are in the Library
-                    var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
-                    if (Path.GetFullPath(assetDbPath).StartsWith(libraryRoot, StringComparison.Ordinal))
-                        throw new ArgumentException("You're trying to export a package from your Libary folder. This is not allowed. Only local/embedded packages can be exported.");
-                
-                    // sanitize: do not allow re-uploading of Unity-scoped packages
-                    if (packageInfo.name.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
-                        throw new ArgumentException("You're trying to export a package from the Unity registry. This is not allowed.");
-                    
+                    if (!Unsupported.IsDeveloperMode())
+                    {
+                        // sanitize: do not allow uploading packages that are in the Library
+                        var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
+                        if (Path.GetFullPath(assetDbPath).StartsWith(libraryRoot, StringComparison.Ordinal))
+                            throw new ArgumentException("You're trying to export a package from your Libary folder. This is not allowed. Only local/embedded packages can be exported.");
+
+                        // sanitize: do not allow re-uploading of Unity-scoped packages
+                        if (packageInfo.name.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
+                            throw new ArgumentException("You're trying to export a package from the Unity registry. This is not allowed.");
+                    }
+
                     if (includeProjectSettings)
                     {
                         Helpers.LogWarning("You're exporting a package - please note that project settings won't be included!");

@@ -44,15 +44,17 @@ namespace Needle.PackageTools
                 var packageName = path.Substring(0, indexOfSlash);
                 path = "Packages/" + packageName;
                 
-                // sanitize: do not allow uploading packages that are in the Library
-                var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
-                if (Path.GetFullPath(path).StartsWith(libraryRoot, StringComparison.Ordinal))
-                    return null;
-                
-                // sanitize: do not allow re-uploading of Unity-scoped packages
-                if (packageName.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
-                    return null;
-                
+                if(!Unsupported.IsDeveloperMode())
+                {
+                    // sanitize: do not allow uploading packages that are in the Library
+                    var libraryRoot = Path.GetFullPath(Application.dataPath + "/../Library");
+                    if (Path.GetFullPath(path).StartsWith(libraryRoot, StringComparison.Ordinal))
+                        return null;
+                    
+                    // sanitize: do not allow re-uploading of Unity-scoped packages
+                    if (packageName.StartsWith("com.unity.", StringComparison.OrdinalIgnoreCase))
+                        return null;
+                }
                 return AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
             }
 
