@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using UnityEditor;
-using UnityEditor.PackageManager;
 using Debug = UnityEngine.Debug;
 
 namespace Needle.PackageTools
@@ -33,7 +30,7 @@ namespace Needle.PackageTools
 			var temp = Path.GetTempPath() + "/" + packageName;
 			if (Directory.Exists(temp)) Directory.Delete(temp, true);
 			Debug.Log(temp);
-			CopyFilesRecursively(packageDirectory, temp + "/package");
+			CopyFilesRecursively(packageDirectory, temp);
 			var res = TryCreateTgz(temp, targetPath);
 			if (res) Directory.Delete(temp, true);
 			return res;
