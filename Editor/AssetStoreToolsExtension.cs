@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using HarmonyLib;
 using UnityEditor;
 using UnityEngine;
 using Assembly = System.Reflection.Assembly;
+using Debug = UnityEngine.Debug;
 
 // ReSharper disable InconsistentNaming
 
@@ -340,10 +344,50 @@ namespace Needle.PackageTools
                         }
                     }
 
+                    #region Handle file ignore
+                    var ignoreFiles = new List<(string dir, string content)>();
+                    
+                    // collect npm and gitignore files in all subdirectories
+                    void CollectIgnoreFiles(string directory)
+                    {
+                        ignoreFiles.Clear();
+                        foreach (var file in new DirectoryInfo(directory).GetFiles("*", SearchOption.AllDirectories))
+                        {
+                            if(file.Name.EndsWith(".npmignore") || file.Name.EndsWith(".gitignore")) 
+                                ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), File.ReadAllText(file.FullName)));
+                        }
+                    }
+                    bool IsIgnored(string filePath)
+                    {
+                        filePath = filePath.Replace("\\", "/");
+                        foreach (var ig in ignoreFiles)
+                        {
+                            // check if the file is a sub file of the ignore file
+                            // because we dont want to apply ignore patterns to external files
+                            // e.g. a file in "stuff/material" should not be affected from "myFolder/.gitignore"
+                            if (filePath.StartsWith(ig.dir))
+                            {
+                                using (var reader = new StringReader(ig.content))
+                                {
+                                    var line = reader.ReadLine();
+                                    if (string.IsNullOrEmpty(line)) continue;
+                                    if (Regex.Match(filePath, line).Success)
+                                    {
+                                        Debug.Log("<b>IGNORE</b> " + filePath);
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                    #endregion
+                    
                     foreach (var root in packageRoots)
                     {
                         var fullPath = Path.GetFullPath(root);
-                        
+                        CollectIgnoreFiles(root);
+                            
                         foreach (var directory in new DirectoryInfo(root).GetDirectories("*", SearchOption.AllDirectories))
                         {
                             // this is a hidden folder. We want to include it in our export to catch
@@ -358,6 +402,8 @@ namespace Needle.PackageTools
                                 {
                                     if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                                         continue;
+
+                                    if (IsIgnored(file.FullName)) continue;
                                     
                                     var projectRelativePath = file.FullName.Replace(fullPath, root);
                                     exportPaths.Add(projectRelativePath);
@@ -366,9 +412,16 @@ namespace Needle.PackageTools
                         }
                     }
                     
-                    // TODO create actual .unitypackage
-                    Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", exportPaths));
+                    // Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", exportPaths));
                     
+                    var dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/Unity/AssetStoreTools/Export";
+                    foreach(var path in exportPaths)
+                        UnitypackageExporter.AddToUnityPackage(path, dir);
+                    if (!Zipper.TryCreateTgz(dir, fileName))
+                        throw new Exception("Failed creating .unitypackage " + fileName);
+                    EditorUtility.RevealInFinder(fileName);
+                    Directory.Delete(dir, true);
+                    // EditorUtility.RevealInFinder(dir);
                     return false;
                 }
                 

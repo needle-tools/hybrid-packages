@@ -6,6 +6,8 @@ using System.Security.Cryptography;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering.VirtualTexturing;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Needle.PackageTools
@@ -46,24 +48,30 @@ namespace Needle.PackageTools
             return Application.dataPath + "/" + fileName;
         }
 
-        [MenuItem("PackageExport/Export files")]
+        [MenuItem("Test/Export package files")]
         private static void ExportTest()
         {
             var dir = @"C:\Users\wiessler\AppData\Local\Temp\test";
             AddToUnityPackage(@"C:\git\npm\development\PackagePlayground-2020.3\Assets\PackageToolsTesting\AssetReference\TestMaterial.mat", dir);
             AddToUnityPackage(@"C:\git\npm\development\editorpatching\modules\unity-demystify\package\Documentation~\beforeafter.jpg", dir);
-            Zipper.TryCreateTgz(dir, dir + "/package.unitypackage");
+            var package = dir + "/package.unitypackage";
+            Zipper.TryCreateTgz(dir, package);
+            EditorUtility.RevealInFinder(package);
         }
 
         public static void AddToUnityPackage(string pathToFileOrDirectory, string targetDir)
         {
-            if (!Directory.Exists(targetDir)) throw new Exception("Target directory does not exist: " + targetDir);
             if (!File.Exists(pathToFileOrDirectory) && !Directory.Exists(pathToFileOrDirectory))
             {
                 Debug.LogError("File " + pathToFileOrDirectory + " does not exist");
                 return;
             }
+            if (Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
 
+            var isFile = File.Exists(pathToFileOrDirectory);
             if (pathToFileOrDirectory.EndsWith(".meta")) return;
             var metaPath = pathToFileOrDirectory + ".meta";
             var guid = default(string);
@@ -105,17 +113,20 @@ namespace Needle.PackageTools
 
             var outDir = targetDir + "/" + guid;
             if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
-            File.WriteAllText(outDir + "/pathname", relPath);
-            File.Copy(pathToFileOrDirectory, outDir + "/asset");
-            if (hasMetaFile) File.Copy(metaPath, outDir + "/asset.meta");
+            var pathNameFilePath = outDir + "/pathname";
+            if(File.Exists(pathNameFilePath)) File.Delete(pathNameFilePath);
+            File.WriteAllText(pathNameFilePath, relPath);
+            if(isFile) File.Copy(pathToFileOrDirectory, outDir + "/asset", true);
+            if (hasMetaFile) File.Copy(metaPath, outDir + "/asset.meta", true);
 
-            var icon = AssetDatabase.GetCachedIcon(relPath) as Texture2D;
+            var preview = AssetPreview.GetAssetPreviewFromGUID(guid);
+            // var icon = AssetDatabase.GetCachedIcon(relPath) as Texture2D;
             // this is e.g. icon for material, not what we want
             // if (!icon) icon = InternalEditorUtility.GetIconForFile(relPath);
-            if (icon)
+            if (preview)
             {
-                var copy = new Texture2D(icon.width, icon.height);
-                Graphics.CopyTexture(icon, copy);
+                var copy = new Texture2D(preview.width, preview.height, preview.format, false);//, preview.graphicsFormat, preview.mipmapCount, TextureCreationFlags.None);
+                Graphics.CopyTexture(preview, 0, 0, copy, 0, 0);
                 var bytes = copy.EncodeToPNG();
                 if (bytes != null && bytes.Length > 0)
                 {
