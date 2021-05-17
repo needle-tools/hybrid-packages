@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using HarmonyLib;
 using UnityEditor;
 using UnityEngine;
@@ -15,6 +14,8 @@ using Debug = UnityEngine.Debug;
 
 namespace Needle.PackageTools
 {
+    using Ignore = Ignore.Ignore;
+
     public class PackagerPatchProvider
     {
         [InitializeOnLoadMethod]
@@ -350,7 +351,7 @@ namespace Needle.PackageTools
 
                     #region Handle file ignore
                     
-                    var ignoreFiles = new List<(string dir, string content)>();
+                    var ignoreFiles = new List<(string dir, Ignore ignore)>();
                     
                     // collect npm and gitignore files in all subdirectories
                     void CollectIgnoreFiles(string directory)
@@ -360,12 +361,16 @@ namespace Needle.PackageTools
 
                         var di = new DirectoryInfo(directory);
 
-                        void AddToIgnore(List<(string dir, string content)> ignoreList, string searchPattern, SearchOption searchOption)
+                        void AddToIgnore(List<(string dir, Ignore ignore)> ignoreList, string searchPattern, SearchOption searchOption)
                         {
                             try
                             {
                                 foreach (var file in di.GetFiles(searchPattern, searchOption))
-                                    ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), File.ReadAllText(file.FullName)));
+                                {
+                                    var ignore = new Ignore();
+                                    ignore.Add(File.ReadAllLines(file.FullName).Where(x => !string.IsNullOrWhiteSpace(x.Trim()) && !x.TrimStart().StartsWith("#", StringComparison.Ordinal)));
+                                    ignoreFiles.Add((file.Directory!.FullName.Replace("\\", "/"), ignore));
+                                }
                             }
                             catch (IOException)
                             {
@@ -377,7 +382,7 @@ namespace Needle.PackageTools
                         AddToIgnore(ignoreFiles, ".gitignore", SearchOption.AllDirectories);
                         AddToIgnore(ignoreFiles, ".npmignore", SearchOption.AllDirectories);
 
-                        var upwardsIgnoreFiles = new List<(string, string)>();
+                        var upwardsIgnoreFiles = new List<(string, Ignore)>();
                         bool folderIsInsideGitRepository = false;
 
                         try
@@ -420,21 +425,18 @@ namespace Needle.PackageTools
                         filePath = filePath.Replace("\\", "/");
                         foreach (var ig in ignoreFiles)
                         {
+                            var dirLength = ig.dir.Length + 1;
                             // check if the file is a sub file of the ignore file
                             // because we dont want to apply ignore patterns to external files
                             // e.g. a file in "stuff/material" should not be affected from "myFolder/.gitignore"
                             if (filePath.StartsWith(ig.dir))
                             {
-                                using (var reader = new StringReader(ig.content))
+                                var checkedPath = filePath.Substring(dirLength);
+                                if (ig.ignore.IsIgnored(checkedPath)) 
                                 {
-                                    var line = reader.ReadLine();
-                                    if (string.IsNullOrEmpty(line)) continue;
-                                    if (Regex.Match(filePath, line).Success)
-                                    {
-                                        Debug.Log("<b>IGNORE</b> " + filePath);
-                                        Profiler.EndSample();
-                                        return true;
-                                    }
+                                    Debug.Log("<b>File will be ignored:</b> " + filePath + ", location of .ignore: " + ig.dir);
+                                    Profiler.EndSample();
+                                    return true;
                                 }
                             }
                         }

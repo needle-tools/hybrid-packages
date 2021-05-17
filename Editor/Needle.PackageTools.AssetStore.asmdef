@@ -10,7 +10,8 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "AssetStoreTools.dll",
-        "Needle.PackageTools.AST.Harmony.dll"
+        "Needle.PackageTools.AST.Harmony.dll",
+        "Needle.PackageTools.AST.Ignore.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],

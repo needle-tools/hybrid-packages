@@ -96,7 +96,9 @@ namespace Needle.PackageTools
             ".playable",
             ".lighting",
             ".usdc",
-            ".txt",
+            ".usda",
+            ".usd",
+            ".usdz",
             ".asmdef",
             ".asmref",
             ".bundle",
@@ -129,7 +131,8 @@ namespace Needle.PackageTools
             ".7z",
             ".unitypackage",
             ".ipdb",
-            ".url"
+            ".url",
+            ".shadergraph"
         };
         
         public static void AddToUnityPackage(string pathToFileOrDirectory, string targetDir)
