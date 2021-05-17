@@ -80,6 +80,7 @@ namespace Needle.PackageTools
             PathValidationPatch.Patch(harmony);
             RootPathPatch.Patch(harmony);
             GetGUIDsPatch.Patch(harmony);
+            PackagerExportPatch.Patch(harmony);
         }
 
         public class PathValidationPatch
@@ -285,6 +286,94 @@ namespace Needle.PackageTools
                 __result = results.Distinct().ToArray();
                 // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath)));
                 return false;
+            }
+        }
+        
+        public class PackagerExportPatch
+        {
+            public static void Patch(Harmony harmony)
+            {
+                var asm = Helpers.GetAssetStoreToolsAssembly();
+                if (asm == null) return;
+                var m = asm.GetType("Packager").GetMethod("ExportPackage", (BindingFlags) (-1));
+                harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(PackagerExportPatch), "Prefix")));
+            }
+
+            // ReSharper disable once UnusedMember.Local
+            // ReSharper disable once UnusedParameter.Local
+            // ReSharper disable once RedundantAssignment
+            private static bool Prefix(string[] guids, string fileName, bool needsPackageManagerManifest)
+            {
+                // we want to patch this if there's packages in here
+                var anyFileInPackages = guids.Select(AssetDatabase.GUIDToAssetPath).Any(x => x.StartsWith("Packages"));
+
+                if (anyFileInPackages && needsPackageManagerManifest)
+                    throw new ArgumentException("When exporting Hybrid Packages, please don't enable the \"Include Dependencies\" option. Specify dependencies via package.json.");
+
+                if (anyFileInPackages)
+                {
+                    // we want to do custom packing here.
+                    // TODO respect .gitignore and .npmignore; those might apply to files in Samples~ and/or Documentation~ as well.
+                    
+                    // get all packages we want to export
+                    HashSet<string> packageRoots = new HashSet<string>();
+                    
+                    // These are project-relative paths, not absolute paths
+                    HashSet<string> exportPaths = new HashSet<string>();
+
+                    // all the currently selected files from AssetDB should be exported anyways
+                    var assetDatabasePaths = guids.Select(AssetDatabase.GUIDToAssetPath).ToList();
+                    foreach (var p in assetDatabasePaths)
+                        exportPaths.Add(p);
+                    
+                    foreach (var path0 in assetDatabasePaths)
+                    {
+                        var path = path0;
+                        if (path.StartsWith("Packages/", StringComparison.Ordinal))
+                        {
+                            path = path.Substring("Packages/".Length);
+                            var indexOfSlash = path.IndexOf("/", StringComparison.Ordinal);
+                            var packageName = path.Substring(0, indexOfSlash);
+                            path = "Packages/" + packageName;
+                            if(!packageRoots.Contains(path))
+                                packageRoots.Add(path);
+                        }
+                    }
+
+                    foreach (var root in packageRoots)
+                    {
+                        var fullPath = Path.GetFullPath(root);
+                        
+                        foreach (var directory in new DirectoryInfo(root).GetDirectories("*", SearchOption.AllDirectories))
+                        {
+                            // this is a hidden folder. We want to include it in our export to catch
+                            // - Samples~
+                            // - Documentation~
+                            // - Templates~
+                            // and so on.
+                            if (directory.Name.EndsWith("~", StringComparison.Ordinal))
+                            {
+                                // add all files in this directory
+                                foreach (var file in directory.GetFiles("*", SearchOption.AllDirectories))
+                                {
+                                    if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+                                        continue;
+                                    
+                                    var projectRelativePath = file.FullName.Replace(fullPath, root);
+                                    exportPaths.Add(projectRelativePath);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // TODO create actual .unitypackage
+                    Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", exportPaths));
+                    
+                    return false;
+                }
+                
+                Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", guids.Select(AssetDatabase.GUIDToAssetPath)));
+                return true;
             }
         }
     }
