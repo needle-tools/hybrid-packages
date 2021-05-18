@@ -2,6 +2,12 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2021-05-18
+- fixed: packing performance was low because compression strength was "Ultra", now defaults to "Normal"
+- changed: disabled gitignore/npmignore option by default (it's experimental), can be turned on in the upload config
+- added: ProgressBars to see what actually happens
+- added: ability to export one or many upload configs directly for local testing (without upload)
+
 ## [0.5.0] - 2021-05-18
 - added: ability to export hidden folders (Samples~, Documentation~ etc) in .unitypackage
 - added: file ignore checks for content from hidden folders based on .gitignore/.npmignore

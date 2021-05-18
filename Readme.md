@@ -80,7 +80,7 @@ The basic flow is:
 - If you run into any issues, you can temporarily disable the functionality via <kbd>Edit/Project Settings/Needle/Editor Patch Manager</kbd> or remove the package. Please report a bug!
 - The `package.json` of your package can [define dependencies](https://docs.unity3d.com/Manual/upm-manifestPrj.html). However, only dependencies from the Unity Registry will be automatically resolved in empty projects - we'll need to think of a separate mechanism / guidance for people to add dependencies from scoped registries. For now, it's recommended that you guard against missing dependencies via [Version Defines](https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#define-symbols).
 - .unitypackage preview images for hidden folders will not be exported unless you're on 2020.1+ and had that folder in the AssetDatabase in the current session (e.g. the folder was named "Samples" and then "Samples~" to hide it before export).
-- There's some support for .gitignore and .npmignore, but the behaviour isn't exactly the same as with npm/git (e.g. when multiple of these are in different folders, the order they are applied isn't always correct).
+- There's experimental support for .gitignore and .npmignore, but the behaviour isn't exactly the same as with npm/git (e.g. when multiple of these are in different folders, the order they are applied isn't always correct). You can turn this on on the UploadConfig asset.
 - The AssetStore Tools sometimes get stuck in an endless loop when trying to export nearly empty folders or empty multi-package sets. This seems to be an AssetStore Tools bug.
 
 ## Technical Details  
