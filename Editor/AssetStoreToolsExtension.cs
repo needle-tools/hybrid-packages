@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -74,6 +75,8 @@ namespace Needle.PackageTools
 
     public class AssetStoreToolsPatchProvider
     {
+        private static AssetStoreUploadConfig currentUploadConfig;
+        
         [InitializeOnLoadMethod]
         static void OnGetPatches()
         {
@@ -186,6 +189,8 @@ namespace Needle.PackageTools
                 if (localRootPath.StartsWith("/", StringComparison.Ordinal) && !localRootPath.StartsWith("/.", StringComparison.Ordinal))
                     localRootPath = localRootPath.Substring("/".Length);
                 
+                currentUploadConfig = null;
+                
                 if (Directory.Exists("Assets/" + localRootPath) && !localRootPath.StartsWith("/.."))
                 {
                     // find the config inside this folder
@@ -207,6 +212,8 @@ namespace Needle.PackageTools
                             }
                             
                             __result = results.ToArray();
+                            currentUploadConfig = uploadConfig;
+                            
                             // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath))); 
                             return false;
                         }
@@ -325,7 +332,11 @@ namespace Needle.PackageTools
                 // hidden top-level folders (end with ~) and .npmignore/.gitignore
                 if (anyFileInPackages)
                 {
-                    Profiler.BeginSample("Collect Package Roots");
+                    var sw = new Stopwatch();
+                    sw.Start();
+                    
+                    EditorUtility.DisplayProgressBar("Creating .unitypackage", "Collecting Packages", 0f);
+                    Profiler.BeginSample("Collecting Packages");
                     
                     // get all packages we want to export
                     var packageRoots = new HashSet<string>();
@@ -452,10 +463,14 @@ namespace Needle.PackageTools
                     }
                     
                     #endregion
-                    
+
+                    int counter = 0;
+                    int length = packageRoots.Count;
                     foreach (var root in packageRoots)
                     {
-                        Profiler.BeginSample("Collect Files in Package Root: " + root);
+                        EditorUtility.DisplayProgressBar("Creating .unitypackage", "Collecting Files for Package: " + root, counter / (float) length);
+                        counter++;
+                        Profiler.BeginSample("Collecting Files for Package: " + root);
                         
                         var fullPath = Path.GetFullPath(root);
                         CollectIgnoreFiles(root);
@@ -478,7 +493,7 @@ namespace Needle.PackageTools
                                         if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                                             continue;
 
-                                        if (IsIgnored(file.FullName)) continue;
+                                        if (currentUploadConfig.respectIgnoreFiles && IsIgnored(file.FullName)) continue;
 
                                         var projectRelativePath = file.FullName.Replace(fullPath, root);
                                         exportPaths.Add(projectRelativePath);
@@ -496,11 +511,13 @@ namespace Needle.PackageTools
                     
                     // Debug.Log("<b>" + fileName + "</b>" + "\n" + string.Join("\n", exportPaths));
                     
+                    EditorUtility.DisplayProgressBar("Creating .unitypackage", "Start Packing to " + fileName, 0.2f);
                     Profiler.BeginSample("Create .unitypackage");
                     var dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/Unity/AssetStoreTools/Export";
                     foreach(var path in exportPaths)
                         UnitypackageExporter.AddToUnityPackage(path, dir);
-                    if (!Zipper.TryCreateTgz(dir, fileName))
+                    var compressionStrength = currentUploadConfig != null ? currentUploadConfig.compressionStrength : Zipper.CompressionStrength.Normal;
+                    if (!Zipper.TryCreateTgz(dir, fileName, compressionStrength))
                     {
                         Profiler.EndSample();
                         throw new Exception("Failed creating .unitypackage " + fileName);
@@ -508,6 +525,10 @@ namespace Needle.PackageTools
                     EditorUtility.RevealInFinder(fileName);
                     Directory.Delete(dir, true);
                     Profiler.EndSample();
+                    EditorUtility.DisplayProgressBar("Creating .unitypackage", "Done", 1f);
+                    EditorUtility.ClearProgressBar();
+
+                    Debug.Log("Created .unitypackage at " + fileName + " in " + (sw.ElapsedMilliseconds / 1000f).ToString("F2") + "s");
                     return false;
                 }
                 

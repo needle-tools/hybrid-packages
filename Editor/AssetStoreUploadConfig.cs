@@ -10,9 +10,11 @@ using Object = UnityEngine.Object;
 namespace Needle.PackageTools
 {
     [CreateAssetMenu(menuName = "Needle/Asset Store Upload Config")]
-    public class AssetStoreUploadConfig : ScriptableObject
+    public class AssetStoreUploadConfig : ScriptableObject  
     {
         public List<Object> items;
+        public Zipper.CompressionStrength compressionStrength = Zipper.CompressionStrength.Normal;
+        public bool respectIgnoreFiles = false;
         
         public bool IsValid => items != null && items.Any();
 
@@ -101,6 +103,8 @@ namespace Needle.PackageTools
             };
         }
 
+        private static readonly GUIContent RespectIgnoreFilesContent = new GUIContent("Respect Ignore Files (experimental)", "Uses .gitignore and .npmignore to filter which files should be part of the package.");
+        
         public override void OnInspectorGUI()
         {
             var t = target as AssetStoreUploadConfig;
@@ -108,6 +112,8 @@ namespace Needle.PackageTools
             
             EditorGUILayout.LabelField(new GUIContent("Selection", "Select all root folders and assets that should be exported. For packages, select the package.json."), EditorStyles.boldLabel);
             itemList.DoLayoutList();
+            // EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.compressionStrength)));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.respectIgnoreFiles)), RespectIgnoreFilesContent);
             serializedObject.ApplyModifiedProperties();
             EditorGUI.BeginDisabled(true);
             EditorGUILayout.Space();

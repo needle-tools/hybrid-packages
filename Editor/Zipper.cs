@@ -7,6 +7,15 @@ namespace Needle.PackageTools
 {
 	public static class Zipper
 	{
+		public enum CompressionStrength
+		{
+			Fastest = 1,
+			Fast    = 3,
+			Normal  = 5,
+			Maximum = 7,
+			Ultra   = 9
+		}
+		
 		public static bool TryCreateUnityPackageForPackage(string packageDirectory, string packageName, string targetPath)
 		{
 			var temp = Path.GetTempPath() + "/" + packageName;
@@ -31,17 +40,19 @@ namespace Needle.PackageTools
 			}
 		}
 
-		public static bool TryCreateTgz(string contentDirectory, string outputFilePath)
+		public static bool TryCreateTgz(string contentDirectory, string outputFilePath, CompressionStrength strength = CompressionStrength.Normal)
 		{
-			if (Zip(contentDirectory, outputFilePath))
+			if (Zip(contentDirectory, outputFilePath, strength))
 				return true;
 			return false;
 		}
 
 		public static bool DebugLog = false;
 
-		private static bool Zip(string directoryPath, string outputFilePath)
+		private static bool Zip(string directoryPath, string outputFilePath, CompressionStrength strength)
 		{
+			EditorUtility.DisplayProgressBar("Creating .unitypackage", "Packing " + outputFilePath, 0f);
+			
 			var zipper = Get7zPath();
 			outputFilePath = Path.GetFullPath(outputFilePath);
 
@@ -77,10 +88,12 @@ namespace Needle.PackageTools
 			var tarPath = Path.GetDirectoryName(outputFilePath) + "/archtemp.tar";
 			if (File.Exists(tarPath)) File.Delete(tarPath);
 			var args_tar = $"a -ttar \"{tarPath}\" \"{files}\"";
+			EditorUtility.DisplayProgressBar("Creating .unitypackage", "Packing .tar file for " + outputFilePath, 0.1f);
 			var code = RunWith(args_tar);
 			if (code == 0)
 			{
-				var args_tgz = $"a -tgzip \"{outputFilePath}\" \"{tarPath}\" -mx9";
+				EditorUtility.DisplayProgressBar("Creating .unitypackage", "Packing .tar.gz file for " + outputFilePath + ", compression: " + strength, 0.4f);
+				var args_tgz = $"a -tgzip \"{outputFilePath}\" \"{tarPath}\" -mx" + (int) strength;
 				if (File.Exists(outputFilePath)) File.Delete(outputFilePath);
 				code = RunWith(args_tgz);
 				if (DebugLog)
@@ -89,6 +102,8 @@ namespace Needle.PackageTools
 				if (success) File.Delete(tarPath);
 			}
 
+			EditorUtility.DisplayProgressBar("Creating .unitypackage", "Done", 1f);
+			EditorUtility.ClearProgressBar();
 			return code == 0;
 		}
 
