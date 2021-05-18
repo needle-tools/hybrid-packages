@@ -55,21 +55,29 @@ The resulting .unitypackage files _do not require any additional setup for users
 2. hit <kbd>Assets/Export Package</kbd> (also available via right click on Assets/Folders).  
 
 ### Upload Packages to Asset Store
+
 1. Install the Asset Store Tools as usual: https://assetstore.unity.com/packages/tools/utilities/asset-store-tools-115
 1. Open <kbd>Asset Store Tools/Package Upload</kbd>
 1. Press <kbd>Select</kbd> and select a local or embedded package
 2. Make sure "include dependencies" is off - you can now specify them through your package.json!
 3. Press <kbd>Upload</kbd>
 
-#### Multiple Packages
+#### Using an Upload Config
+
+Using a configuration file makes it easier to specify settings for export, and allows for "Package Bundles" (multiple packages shipped to AssetStore).  
+
 The AssetStoreTools only allow selecting one root folder.  
-As a workaround, you can create an "Upload Config" that specifies multiple packages / root folders to upload.  
+Thus, this package allows you to create an "Upload Config" that specifies multiple packages / root folders to upload.  
 
 The basic flow is:  
 
 1. Create a folder for your "package collection" in Assets, e.g. "My Package Collection".
 2. In that folder, right click and create a `Needle/Asset Store Upload Config`.
-3. Add entries to the `Selection`" array and drag the folders/files into the `Item` field. For packages, drag in the `package.json` since package folders can't be drag-dropped.
+3. Add entries to the `Selection`" array and drag the folders/files into the `Item` field. 
+   For packages, drag in the `package.json` since package folders can't be drag-dropped.  
+   This can be a single file, a folder, one or multiple packages, or a combination of these.  
+2. To test your Hybrid Package locally, select your config, and click <kbd>Export for Local Testing</kbd>.  
+   This produces exactly the same .unitypackage as on Store upload, so you can test this one by importing it into a different/empty project.  
 4. Open <kbd>Asset Store Tools/Package Upload</kbd>
 1. Press <kbd>Select</kbd> and select the directory that contains your upload config, e.g. "My Package Collection"
 3. Press <kbd>Upload</kbd>
@@ -91,7 +99,7 @@ All the functionality to use packages in .unitypackages is already provided by U
 
 ## Ideas for Future Development
 - Immutable Packages could be shipped in `.unitypackage` as well as `Packages/com.my.package.tgz`, but this needs a bit more work to create an additional archive and include that in the exported package.
-- More safeguards around accidental inclusion of dependencies from other packages
+- ~~More safeguards around accidental inclusion of dependencies from other packages~~
 - Ability to show hints/warnigs for people to ask them to manually install dependencies from scoped registries. The Unity Terms of Service currently prohibit doing this automatically.
 
 ## If you're Unity
