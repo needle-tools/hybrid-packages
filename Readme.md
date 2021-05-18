@@ -41,8 +41,10 @@ The resulting .unitypackage files _do not require any additional setup for users
 <details>
 <summary><em>Alternative: git package (no PackMan updates, not recommended)</em></summary>  
 
-- Complete step 1 above  
-- Add `https://github.com/needle-tools/upm-in-unitypackage.git/?path=/package` in Package Manager  
+   - open <kbd>Window/Package Manager</kbd>
+   - click <kbd>+</kbd>
+   - click <kbd>Add package from git URL</kbd> or <kbd>Add package by name</kbd>  
+   - Add `https://github.com/needle-tools/upm-in-unitypackage.git` in Package Manager  
 
 </details>
 
