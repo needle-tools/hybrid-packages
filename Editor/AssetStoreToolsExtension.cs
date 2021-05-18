@@ -182,7 +182,8 @@ namespace Needle.PackageTools
 
                 List<string> results = new List<string>();
 
-                if (localRootPath.StartsWith("/", StringComparison.Ordinal))
+                // seems there's some weird path behaviour on 2018.4 with double //
+                if (localRootPath.StartsWith("/", StringComparison.Ordinal) && !localRootPath.StartsWith("/.", StringComparison.Ordinal))
                     localRootPath = localRootPath.Substring("/".Length);
                 
                 if (Directory.Exists("Assets/" + localRootPath) && !localRootPath.StartsWith("/.."))
