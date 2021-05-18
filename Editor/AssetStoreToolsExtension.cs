@@ -90,6 +90,29 @@ namespace Needle.PackageTools
             PackagerExportPatch.Patch(harmony);
         }
 
+        internal static void ExportPackageForConfig(AssetStoreUploadConfig uploadConfig)
+        {
+            var results = new List<string>();
+            
+            if (!uploadConfig.IsValid)
+                throw new ArgumentException("The selected upload config " + uploadConfig + " is not valid.");
+            
+            currentUploadConfig = uploadConfig;
+                            
+            foreach (var path in uploadConfig.GetExportPaths())
+                GetGUIDsPatch.AddChildrenToResults(results, path);
+
+            var exportFilename = "Temp/HybridPackage_" + Path.GetDirectoryName(AssetDatabase.GetAssetPath(uploadConfig))
+                .Replace("\\", "/")
+                .Replace("Assets/", "")
+                .Replace("Packages/", "")
+                .Replace("/", "_")
+                .Trim('_')
+                + ".unitypackage";
+            
+            PackagerExportPatch.ExportPackage(results.ToArray(), exportFilename);
+        }
+
         public class PathValidationPatch
         {
             public static void Patch(Harmony harmony)
@@ -173,6 +196,23 @@ namespace Needle.PackageTools
                 public string resolvedPath;
             }
             
+            internal static void AddChildrenToResults(List<string> results, string assetPath)
+            {
+                if (File.Exists(assetPath))
+                {
+                    results.Add(AssetDatabase.AssetPathToGUID(assetPath));
+                    return;
+                }
+                    
+                string[] collection = new string[0];
+                var children = AssetDatabase.CollectAllChildren(AssetDatabase.AssetPathToGUID(assetPath), collection);
+
+                if (!children.Any())
+                    throw new NullReferenceException(Helpers.LogPrefix + "Seems you're trying to export something that's not in your AssetDatabase: " + assetPath + " - this can't be exported as .unitypackage.");
+
+                results.AddRange(children);
+            }
+            
             // ReSharper disable once UnusedMember.Local
             private static bool Prefix(ref string[] __result, object __instance, bool includeProjectSettings)
             {
@@ -205,14 +245,14 @@ namespace Needle.PackageTools
                         {
                             if (!uploadConfig.IsValid)
                                 throw new ArgumentException("The selected upload config at " + configPath + " is not valid.");
+                            currentUploadConfig = uploadConfig;
                             
                             foreach (var path in uploadConfig.GetExportPaths())
                             {
-                                AddChildrenToResults(path);
+                                AddChildrenToResults(results, path);
                             }
                             
                             __result = results.ToArray();
-                            currentUploadConfig = uploadConfig;
                             
                             // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath))); 
                             return false;
@@ -282,24 +322,7 @@ namespace Needle.PackageTools
                     }
                 }
 
-                void AddChildrenToResults(string assetPath)
-                {
-                    if (File.Exists(assetPath))
-                    {
-                        results.Add(AssetDatabase.AssetPathToGUID(assetPath));
-                        return;
-                    }
-                    
-                    string[] collection = new string[0];
-                    var children = AssetDatabase.CollectAllChildren(AssetDatabase.AssetPathToGUID(assetPath), collection);
-
-                    if (!children.Any())
-                        throw new NullReferenceException(Helpers.LogPrefix + "Seems you're trying to export something that's not in your AssetDatabase: " + assetPath + " - this can't be exported as .unitypackage.");
-
-                    results.AddRange(children);
-                }
-
-                AddChildrenToResults(assetDbPath);
+                AddChildrenToResults(results, assetDbPath);
                 
                 __result = results.Distinct().ToArray();
                 // Debug.Log("Included files: " + string.Join("\n", __result.Select(AssetDatabase.GUIDToAssetPath)));
@@ -317,6 +340,8 @@ namespace Needle.PackageTools
                 harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(PackagerExportPatch), "Prefix")));
             }
 
+            internal static bool ExportPackage(string[] guids, string fileName) => Prefix(guids, fileName, false);
+            
             // ReSharper disable once UnusedMember.Local
             // ReSharper disable once UnusedParameter.Local
             // ReSharper disable once RedundantAssignment

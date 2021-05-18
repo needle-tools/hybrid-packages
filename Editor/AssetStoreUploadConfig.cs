@@ -16,7 +16,7 @@ namespace Needle.PackageTools
         public Zipper.CompressionStrength compressionStrength = Zipper.CompressionStrength.Normal;
         public bool respectIgnoreFiles = false;
         
-        public bool IsValid => items != null && items.Any();
+        public bool IsValid => items != null && items.Any(x => GetActualExportObject(x));
 
         public string[] GetExportPaths()
         {
@@ -64,6 +64,7 @@ namespace Needle.PackageTools
         }
     }
 
+    [CanEditMultipleObjects]
     [CustomEditor(typeof(AssetStoreUploadConfig))]
     public class AssetStoreUploadConfigEditor : Editor
     {
@@ -110,21 +111,43 @@ namespace Needle.PackageTools
             var t = target as AssetStoreUploadConfig;
             if (!t) return;
             
-            EditorGUILayout.LabelField(new GUIContent("Selection", "Select all root folders and assets that should be exported. For packages, select the package.json."), EditorStyles.boldLabel);
-            itemList.DoLayoutList();
-            // EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.compressionStrength)));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.respectIgnoreFiles)), RespectIgnoreFilesContent);
-            serializedObject.ApplyModifiedProperties();
+            if(targets.Length <= 1)
+            {
+                EditorGUILayout.LabelField(new GUIContent("Selection", "Select all root folders and assets that should be exported. For packages, select the package.json."), EditorStyles.boldLabel);
+                itemList.DoLayoutList();
+                // EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.compressionStrength)));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(t.respectIgnoreFiles)), RespectIgnoreFilesContent);
+                serializedObject.ApplyModifiedProperties();
+            }
+            
+            EditorGUILayout.Space();
+            
+            if(GUILayout.Button("Export for Local Testing" + (targets.Length > 1 ? " [" + targets.Length + "]" : "")))
+            {
+                foreach (var o in targets)
+                {
+                    var config = (AssetStoreUploadConfig) o;
+                    if(!config) continue;
+                    AssetStoreToolsPatchProvider.ExportPackageForConfig(config);
+                }
+            }
+            
+            EditorGUILayout.Space();
             EditorGUI.BeginDisabled(true);
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField(new GUIContent("Export Roots", "All content from these folders will be included when exporting with this configuration."), EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            var paths = t.GetExportPaths();
-            foreach (var p in paths)
+            foreach(var o in targets)
             {
-                EditorGUILayout.LabelField(p);
+                var c = (AssetStoreUploadConfig) o;
+                EditorGUILayout.LabelField(new GUIContent("Export Roots for " + c.name, "All content from these folders will be included when exporting with this configuration."), EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
+                var paths = c.GetExportPaths();
+                foreach (var p in paths)
+                {
+                    EditorGUILayout.LabelField(p);
+                }
+                EditorGUI.indentLevel--;
+                EditorGUILayout.Space();
             }
-            EditorGUI.indentLevel--;
             EditorGUI.EndDisabled();
         }
     }
