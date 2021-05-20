@@ -518,7 +518,7 @@ namespace Needle.PackageTools
                                         if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                                             continue;
 
-                                        if (currentUploadConfig.respectIgnoreFiles && IsIgnored(file.FullName)) continue;
+                                        if (currentUploadConfig && currentUploadConfig.respectIgnoreFiles && IsIgnored(file.FullName)) continue;
 
                                         var projectRelativePath = file.FullName.Replace(fullPath, root);
                                         exportPaths.Add(projectRelativePath);
@@ -541,7 +541,7 @@ namespace Needle.PackageTools
                     var dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/Unity/AssetStoreTools/Export";
                     foreach(var path in exportPaths)
                         UnitypackageExporter.AddToUnityPackage(path, dir);
-                    var compressionStrength = currentUploadConfig != null ? currentUploadConfig.compressionStrength : Zipper.CompressionStrength.Normal;
+                    var compressionStrength = currentUploadConfig ? currentUploadConfig.compressionStrength : Zipper.CompressionStrength.Normal;
                     if (!Zipper.TryCreateTgz(dir, fileName, compressionStrength))
                     {
                         Profiler.EndSample();
