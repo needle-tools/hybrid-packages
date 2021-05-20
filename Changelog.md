@@ -2,6 +2,9 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2021-05-20
+- fixed: exporting a package that has samples but not using an upload config threw a nullref exception
+
 ## [0.5.1] - 2021-05-18
 - fixed: packing performance was low because compression strength was "Ultra", now defaults to "Normal"
 - changed: disabled gitignore/npmignore option by default (it's experimental), can be turned on in the upload config
