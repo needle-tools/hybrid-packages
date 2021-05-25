@@ -1,0 +1,28 @@
+{
+    "name": "com.needle.my-package",
+    "version": "2.3.0",
+    "displayName": "My Package",
+    "description": "Shows how to set up a package.json",
+    "author":
+    {
+       "name": "Needle",
+       "email": "hi@needle.tools",
+       "url": "https://needle.tools"
+    },
+    "unity": "2019.4",
+    "type": "tool",
+    "documentationUrl": "https://github.com/needle-tools/upm-in-unitypackage#readme",
+    "samples":
+    [
+       {
+          "displayName": "Simple Sample",
+          "description": "A very simple example, enough to get started.",
+          "path": "Samples~/Simple Sample"
+       },
+       {
+          "displayName": "Complex Sample",
+          "description": "Shows everything this package can do.",
+          "path": "Samples~/Complex Sample"
+       }
+    ]
+ }
