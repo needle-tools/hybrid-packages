@@ -135,7 +135,7 @@ namespace Needle.PackageTools
             ".shadergraph"
         };
         
-        public static void AddToUnityPackage(string pathToFileOrDirectory, string targetDir)
+        public static void AddToUnityPackage(string pathToFileOrDirectory, string targetDir, ref Dictionary<string, string> guidToFile)
         {
             if (!File.Exists(pathToFileOrDirectory) && !Directory.Exists(pathToFileOrDirectory))
             {
@@ -147,6 +147,11 @@ namespace Needle.PackageTools
                 Directory.CreateDirectory(targetDir);
             }
 
+            if (guidToFile.ContainsValue(pathToFileOrDirectory))
+            {
+                throw new ArgumentException($"Duplicate Path exported! {pathToFileOrDirectory}");
+            }
+                
             var isFile = File.Exists(pathToFileOrDirectory);
             if (pathToFileOrDirectory.EndsWith(".meta", StringComparison.Ordinal)) return;
             var metaPath = pathToFileOrDirectory + ".meta";
@@ -162,6 +167,9 @@ namespace Needle.PackageTools
                         if (line.StartsWith("guid:", StringComparison.Ordinal))
                         {
                             guid = line.Substring("guid:".Length).Trim();
+                            if (guidToFile.ContainsKey(guid))
+                                throw new ArgumentException($"Duplicate GUID in AssetDatabase ({guid})?! Existing: {guidToFile[guid]}, new: {pathToFileOrDirectory}");
+                            guidToFile.Add(guid, pathToFileOrDirectory);
                             break;
                         }
                         line = reader.ReadLine();
@@ -176,7 +184,22 @@ namespace Needle.PackageTools
                     using (var md5 = MD5.Create()) {
                         md5.TransformFinalBlock(bytes, 0, bytes.Length);
                         var hash = md5.Hash;
-                        guid = BitConverter.ToString(hash).Replace("-","");//(md5.Hash);
+                        // guid = BitConverter.ToString(hash).Replace("-","");//(md5.Hash);
+                        
+                        guid = new Guid(hash).ToString("N");
+                        int maxTries = 200;
+                        while (guidToFile.ContainsKey(guid))
+                        {
+                            Debug.LogWarning($"GUID collision ({guid}), Existing: {guidToFile[guid]}, new: {pathToFileOrDirectory}");
+                            hash[0]++;
+                            guid = new Guid(hash).ToString("N");
+                            maxTries--;
+                            if (maxTries < 0)
+                            {
+                                throw new ArgumentException($"GUID collision on file: {pathToFileOrDirectory} with GUID {guid} even after 200 attempts of finding a new one. Aborting.");
+                            }
+                        }
+                        guidToFile.Add(guid, pathToFileOrDirectory);
                     }
                 }
             }

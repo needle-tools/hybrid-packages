@@ -562,8 +562,11 @@ namespace Needle.PackageTools
                     EditorUtility.DisplayProgressBar("Creating .unitypackage", "Start Packing to " + fileName, 0.2f);
                     Profiler.BeginSample("Create .unitypackage");
                     var dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/Unity/AssetStoreTools/Export";
-                    foreach(var path in exportPaths)
-                        UnitypackageExporter.AddToUnityPackage(path, dir);
+
+                    var guidToFile = new Dictionary<string, string>();
+                    foreach(var path in exportPaths.OrderByDescending(x => AssetDatabase.GetMainAssetTypeAtPath(x) != null))
+                        UnitypackageExporter.AddToUnityPackage(path, dir, ref guidToFile);
+                    
                     var compressionStrength = currentUploadConfig ? currentUploadConfig.compressionStrength : Zipper.CompressionStrength.Normal;
                     if (!Zipper.TryCreateTgz(dir, fileName, compressionStrength))
                     {
