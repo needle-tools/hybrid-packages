@@ -2,6 +2,11 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2021-05-25
+- added: default npmignore excludes will now be excluded when exporting hidden folders (Samples~, Documentation~ etc.)
+- added: new sample, Package with Samples
+- fixed: in very rare cases GUIDs can collide between assets. We're now properly avoiding these collisions.
+
 ## [0.5.2] - 2021-05-20
 - fixed: exporting a package that has samples but not using an upload config threw a nullref exception
 

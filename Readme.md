@@ -254,10 +254,10 @@ Your Content Development Folder "often the git repository root"
 
 ```json
 {
-   "name": "com.my.package",
+   "name": "com.needle.my-package",
    "version": "2.3.0",
    "displayName": "My Package",
-   "description": "Shows how to set up a package.json",
+   "description": "Shows how to set up a Package",
    "author":
    {
       "name": "Needle",
