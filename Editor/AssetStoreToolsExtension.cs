@@ -329,6 +329,23 @@ namespace Needle.PackageTools
                 return false;
             }
         }
+
+        // https://npm.github.io/publishing-pkgs-docs/publishing/the-npmignore-file.html
+        private static readonly HashSet<string> defaultNpmIgnore = new HashSet<string>()
+        {
+            ".*.swp",
+            "._*",
+            ".DS_Store",
+            ".git",
+            ".hg",
+            ".npmrc",
+            ".lock-wscript",
+            ".svn",
+            ".wafpickle-*",
+            "config.gypi",
+            "CVS",
+            "npm-debug.log",
+        };
         
         public class PackagerExportPatch
         {
@@ -505,6 +522,9 @@ namespace Needle.PackageTools
                         {
                             try
                             {
+                                if(directory.Name.StartsWith(".", StringComparison.Ordinal))
+                                    continue;
+                                
                                 // this is a hidden folder. We want to include it in our export to catch
                                 // - Samples~
                                 // - Documentation~
@@ -515,6 +535,9 @@ namespace Needle.PackageTools
                                     // add all files in this directory
                                     foreach (var file in directory.GetFiles("*", SearchOption.AllDirectories))
                                     {
+                                        if(defaultNpmIgnore.Contains(file.Name))
+                                            continue;
+                                        
                                         if (file.Extension.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
                                             continue;
 
