@@ -212,7 +212,7 @@ Your Test Project
 Many packages need to support multiple Unity versions. This has traditionally been pretty cumbersome to maintain, with multiple submodules in different projects, copy-pasting code over, or just hoping everything works.  
 One of the biggest advantages of a package-based workflow is that cross-version development becomes incredibly easy, as the same package on disk can be referenced by multiple projects. Testing code is as simple as focussing the right Unity Editor instance.    
 
-```json
+```
 Your Content Development Folder "often the git repository root"
 ├── Your Test Project on Unity 2019.4
 │   ├── Assets
