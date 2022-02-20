@@ -185,7 +185,7 @@ We're happy to provide guidance on what we needed to change here. This took only
 **Option 1: Single-Project Workflow**
 A single project where you work on your asset.  
 
-```json
+```
 Your Test Project
 ├── Assets
 └── Packages
@@ -304,7 +304,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 **Complete Example: Single-Project Folder Structure with settings**
 
-```json
+```
 Your Test Project
 ├── Assets
 │   └── Resources
