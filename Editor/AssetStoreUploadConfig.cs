@@ -121,7 +121,40 @@ namespace Needle.PackageTools
             }
             
             EditorGUILayout.Space();
-            
+            EditorGUILayout.LabelField(new GUIContent("Export to folder:"), EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            /** Note: re-using the existing messy code for finding a AssetStoreUploadConfig instance - just need one here */
+            foreach( var o in targets )
+            {
+                if( o is AssetStoreUploadConfig anyConfig )
+                {
+                    var temporaryZipFolder = Environment.GetFolderPath( Environment.SpecialFolder.ApplicationData ) + "/Unity/AssetStoreTools/Export";
+
+                    var exportFolder = "Temp";
+                    var exportFilename = exportFolder+"/HybridPackage_" + Path.GetDirectoryName( AssetDatabase.GetAssetPath( anyConfig ) )
+                                             .Replace( "\\", "/" )
+                                             .Replace( "Assets/", "" )
+                                             .Replace( "Packages/", "" )
+                                             .Replace( "/", "_" )
+                                             .Trim( '_' )
+                                         + ".unitypackage";
+
+
+                    
+                    var outputLocation = Path.GetDirectoryName( Application.dataPath ) + "/"+exportFolder;
+                    GUIStyle myCustomStyle = new GUIStyle( GUI.skin.GetStyle( "label" ) )
+                    {
+                        wordWrap = true
+                    };
+                    EditorGUILayout.LabelField( new GUIContent( outputLocation ), myCustomStyle );
+                    if( GUILayout.Button( "Open export folder" ) )
+                    {
+                        Application.OpenURL( outputLocation );
+                    }
+                    
+                    break;
+                }
+            }
             if(GUILayout.Button("Export for Local Testing" + (targets.Length > 1 ? " [" + targets.Length + "]" : "")))
             {
                 foreach (var o in targets)
@@ -131,7 +164,9 @@ namespace Needle.PackageTools
                     AssetStoreToolsPatchProvider.ExportPackageForConfig(config);
                 }
             }
+            EditorGUI.indentLevel--;
             
+
             EditorGUILayout.Space();
             EditorGUI.BeginDisabled(true);
             EditorGUILayout.Space();

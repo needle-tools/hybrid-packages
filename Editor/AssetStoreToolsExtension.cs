@@ -75,6 +75,7 @@ namespace Needle.PackageTools
 
     public class AssetStoreToolsPatchProvider
     {
+        internal const string outputSubFolder = "Temp"; // NB: this is Unity's "project's Temp folder" so you shouldn't change it
         private static AssetStoreUploadConfig currentUploadConfig;
         
         [InitializeOnLoadMethod]
@@ -102,7 +103,7 @@ namespace Needle.PackageTools
             foreach (var path in uploadConfig.GetExportPaths())
                 GetGUIDsPatch.AddChildrenToResults(results, path);
 
-            var exportFilename = "Temp/HybridPackage_" + Path.GetDirectoryName(AssetDatabase.GetAssetPath(uploadConfig))
+            var exportFilename = outputSubFolder+"/HybridPackage_" + Path.GetDirectoryName(AssetDatabase.GetAssetPath(uploadConfig))
                 .Replace("\\", "/")
                 .Replace("Assets/", "")
                 .Replace("Packages/", "")
@@ -579,7 +580,11 @@ namespace Needle.PackageTools
                     EditorUtility.DisplayProgressBar("Creating .unitypackage", "Done", 1f);
                     EditorUtility.ClearProgressBar();
 
-                    Debug.Log("Created .unitypackage at " + fileName + " in " + (sw.ElapsedMilliseconds / 1000f).ToString("F2") + "s");
+                    /**
+                     * Note: "filename" is actually "relative-folder + filename" (it's wrongly named), so we introduce "outputPreDir" as the (folder containing the folder with the file)
+                     */
+                    var outputPreDir = Path.GetDirectoryName( Application.dataPath );
+                    Debug.Log("Created .unitypackage in " + (sw.ElapsedMilliseconds / 1000f).ToString("F2") + "s at: \""+outputPreDir+"/"+ fileName+"\"" );
                     return false;
                 }
                 
