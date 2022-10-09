@@ -56,9 +56,12 @@ The resulting .unitypackage files _do not require any additional setup for users
 
 ### Upload Packages to Asset Store
 
+1. Export your Unitypackage (using the instructions above) - the other ways no longer work (Unity changed the assetstore tools)
 1. Install the Asset Store Tools as usual: https://assetstore.unity.com/packages/tools/utilities/asset-store-tools-115
-1. Open <kbd>Asset Store Tools/Package Upload</kbd>
-1. Press <kbd>Select</kbd> and select a local or embedded package
+1. Open <kbd>Asset Store Tools/Upload</kbd>
+1. Find your draft package in the list (must have already created on Unity Publisher Portal)
+1. Choose the "Pre-exported unitypackage" option
+1. Select the .unitypackage you already exported/created 
 2. Make sure "include dependencies" is off - you can now specify them through your package.json!
 3. Press <kbd>Upload</kbd>
 
@@ -78,6 +81,7 @@ The basic flow is:
    This can be a single file, a folder, one or multiple packages, or a combination of these.  
 2. To test your Hybrid Package locally, select your config, and click <kbd>Export for Local Testing</kbd>.  
    This produces exactly the same .unitypackage as on Store upload, so you can test this one by importing it into a different/empty project.  
+1. NB: the above is now a REQUIRED step, it's the only way you can upload
 4. Open <kbd>Asset Store Tools/Package Upload</kbd>
 1. Press <kbd>Select</kbd> and select the directory that contains your upload config, e.g. "My Package Collection"
 3. Press <kbd>Upload</kbd>
