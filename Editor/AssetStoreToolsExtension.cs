@@ -103,14 +103,7 @@ namespace Needle.PackageTools
             foreach (var path in uploadConfig.GetExportPaths())
                 GetGUIDsPatch.AddChildrenToResults(results, path);
 
-            var exportFilename = outputSubFolder+"/HybridPackage_" + Path.GetDirectoryName(AssetDatabase.GetAssetPath(uploadConfig))
-                .Replace("\\", "/")
-                .Replace("Assets/", "")
-                .Replace("Packages/", "")
-                .Replace("/", "_")
-                .Trim('_')
-                + ".unitypackage";
-            
+            var exportFilename = uploadConfig.GetExportFilename(outputSubFolder);
             PackagerExportPatch.ExportPackage(results.ToArray(), exportFilename);
         }
 
