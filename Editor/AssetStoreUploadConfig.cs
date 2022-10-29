@@ -138,6 +138,8 @@ namespace Needle.PackageTools
             
             EditorGUI.indentLevel++;
             if (wordWrapLabel == null) wordWrapLabel = new GUIStyle( GUI.skin.GetStyle( "label" )){ wordWrap = true };
+            var outputLocation = Path.GetDirectoryName( Application.dataPath ) + "/Temp";
+            EditorGUILayout.LabelField(new GUIContent(outputLocation), wordWrapLabel);
             
             if (GUILayout.Button("Export for Local Testing" + (targets.Length > 1 ? " [" + targets.Length + "]" : "")))
             {
@@ -149,13 +151,10 @@ namespace Needle.PackageTools
                 }
             }
             
-            var outputLocation = Path.GetDirectoryName( Application.dataPath ) + "/Temp";
-            EditorGUILayout.LabelField(new GUIContent(outputLocation), wordWrapLabel);
             if( GUILayout.Button( "Open export folder" ) )
             {
                 Application.OpenURL( outputLocation );
             }
-            
             EditorGUI.indentLevel--;
             
 
