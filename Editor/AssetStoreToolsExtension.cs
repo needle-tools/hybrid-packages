@@ -17,6 +17,7 @@ namespace Needle.HybridPackages
 {
     using Ignore = Ignore.Ignore;
 
+#if UNITY_2019_1_OR_NEWER
     internal class PackagePathValidationPatchProvider
     {
         [InitializeOnLoadMethod]
@@ -36,7 +37,11 @@ namespace Needle.HybridPackages
         {
             private static bool Prefix(ref bool __result, string packageFolderPath, out string assetDatabasePackagePath)
             {
+#if UNITY_2022_1_OR_NEWER
+				var allPackages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
+#else
                 var allPackages = UnityEditor.PackageManager.PackageInfo.GetAll();
+#endif
                 var packageInfo = allPackages.FirstOrDefault(
                     x => x.resolvedPath.Replace("\\", "/") == packageFolderPath.Replace("\\", "/"));
                 if (packageInfo != null)
@@ -52,6 +57,7 @@ namespace Needle.HybridPackages
             }
         }
     }
+#endif
     
     internal class PackagerPatchProvider
     {

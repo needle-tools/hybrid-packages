@@ -2,6 +2,13 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2022-10-30
+- added support for the new Asset Store tools and the integrated Hybrid Packages workflow
+- added automatically enabling the new flow in the Asset Store tools when this package is present
+- added button to open export folder from upload config
+- fix new AssetStore tools not allowing file:.. referenced packages for some reason
+- ensure namespace is Needle.HybridPackages everywhere
+
 ## [0.5.3] - 2021-05-25
 - added: default npmignore excludes will now be excluded when exporting hidden folders (Samples~, Documentation~ etc.)
 - added: new sample, Package with Samples
