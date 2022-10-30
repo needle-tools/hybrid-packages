@@ -1,4 +1,4 @@
-# UPM Packages in .unitypackage files
+# Hybrid Packages
 
 ![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202022.1-brightgreen)
 
@@ -9,7 +9,8 @@ Unity has two separate package formats:
 The latter is newer, enforces better code and directory structure (AsmDefs required), and generally much easier to work with / add / remove / update.
 
 So far, it has been impossible to ship UPM packages on the Asset Store or via `.unitypackage` files.  
-This package fixes that. After installing, you can select assets and folders from the Packages folder to be exported, which 
+This package fixes that by introducing **Hybrid Packages**, regular .unitypackage files that contain the correct directory structures for UPM.  
+After installing this package, you can select assets and folders from the Packages folder to be exported, which 
 - allows packages to be uploaded to the Asset Store through the regular Asset Store Tools
 - enables <kbd>Assets/Export Package</kbd> to export stuff from package folders directly
 
@@ -23,9 +24,17 @@ It's experimental and needs to be explcitily enabled. There's two ways:
 
 - either add the Hybrid Packages package (this one)!  
 - or add the scripting define `UNITY_ASTOOLS_EXPERIMENTAL` in Project Settings.  
-  _Note:_ We still recommend installing the Hybrid Packages package as it fixes some current issues in Unity's tool, like selecting packages with `file:..` references.   
 
-This will unlock a new option in the Asset Store Uploader window:
+> **Note**: We still recommend installing the Hybrid Packages package as it fixes some current issues in Unity's tool, like selecting packages with `file:..` references.   
+
+This will unlock a new option in the Asset Store Uploader window:  
+
+![20221030-024915_Unity](https://user-images.githubusercontent.com/2693840/198858071-9e3fc114-3636-4049-a2cf-d451f51297e9.png)
+
+**Fun fact:** the Asset Store Tools ship as Hybrid Package themselves!  
+
+![image](https://user-images.githubusercontent.com/2693840/198858153-57f5f9ba-c1c7-406e-9fb6-06594876a522.png)
+
 
 ## Installation 💾
 1. 
@@ -100,6 +109,8 @@ Here's how it works:
 - There's experimental support for .gitignore and .npmignore, but the behaviour isn't exactly the same as with npm/git (e.g. when multiple of these are in different folders, the order they are applied isn't always correct). You can turn this on on the UploadConfig asset.
 - The AssetStore Tools sometimes get stuck in an endless loop when trying to export nearly empty folders or empty multi-package sets. This seems to be an AssetStore Tools bug.
 
+----------
+
 ## FAQ / Why should I use this?
 
 Hybrid Packages are an in-between solution. Unity is still not ready for a proper, registry-based package workflow for the Asset Store. Hybrid Packages allow Asset Store developers to switch to a package-based workflow today, with some (but not all) of the benefits of that, with no (known) downsides compared to the current workflow.  
@@ -114,6 +125,9 @@ The files that before went into
 now end up in  
 `Packages/com.your.content/ <all your content>`.   
 This is what's called an embedded package. It is mutable, that is, users can change the files. It is not in the library, and files don't get duplicated into the `Library/PackageCache` folder. Also, this folder is not (and should not) be excluded from source control. From a file system perspective, it's really just a move from `Assets/` to `Packages/`, bringing some of the package benefits with it.  
+
+Here's an example of how this looks for the Asset Store Tools themselves, which also ship as Hybrid Package:  
+![image](https://user-images.githubusercontent.com/2693840/198858135-1795f67d-9121-4835-95e4-214c237ecfb7.png)
 
 ### How does Unity treat these assets when they are placed in the new (and non-standard) location?
 For assets, nothing changes, no new/different rules. This is the same as if a user makes a `Packages/com.your.content/` folder and moves the files there (what a good number of users are already doing anyways). For scripts, Unity's rules for packages apply: code needs to be in AsmDefs to be compiled. This enforces better code structure, faster compilation, and is benefictial no matter if in "Assets" or "Packages".  
