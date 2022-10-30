@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 // ReSharper disable InconsistentNaming
 
-namespace Needle.PackageTools
+namespace Needle.HybridPackages
 {
     using Ignore = Ignore.Ignore;
 
@@ -111,7 +111,7 @@ namespace Needle.PackageTools
 
     internal class AssetStoreToolsPatchProvider
     {
-        internal const string outputSubFolder = "Temp"; // NB: this is Unity's "project's Temp folder" so you shouldn't change it
+        private const string outputSubFolder = "Temp"; // NB: this is Unity's "project's Temp folder" so you shouldn't change it
         private static AssetStoreUploadConfig currentUploadConfig;
         
         [InitializeOnLoadMethod]
@@ -143,7 +143,7 @@ namespace Needle.PackageTools
             PackagerExportPatch.ExportPackage(results.ToArray(), exportFilename);
         }
 
-        public class PathValidationPatch
+        private class PathValidationPatch
         {
             public static void Patch(Harmony harmony)
             {
@@ -166,7 +166,7 @@ namespace Needle.PackageTools
             }
         }
 
-        public class RootPathPatch
+        private class RootPathPatch
         {
             public static void Patch(Harmony harmony)
             {
@@ -209,8 +209,7 @@ namespace Needle.PackageTools
             }
         }
 
-        // private string[] GetGUIDS(bool includeProjectSettings)
-        public class GetGUIDsPatch
+        private class GetGUIDsPatch
         {
             public static void Patch(Harmony harmony)
             {
@@ -376,8 +375,8 @@ namespace Needle.PackageTools
             "CVS",
             "npm-debug.log",
         };
-        
-        public class PackagerExportPatch
+
+        private class PackagerExportPatch
         {
             public static void Patch(Harmony harmony)
             {

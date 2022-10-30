@@ -7,7 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
-namespace Needle.PackageTools
+namespace Needle.HybridPackages
 {
     public static class UnitypackageExporter
     {

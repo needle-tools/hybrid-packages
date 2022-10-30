@@ -10,7 +10,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Needle.PackageTools.Tests
+namespace Needle.HybridPackages.Tests
 {
     public class PackageExport
     {

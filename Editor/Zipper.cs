@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
-namespace Needle.PackageTools
+namespace Needle.HybridPackages
 {
 	public static class Zipper
 	{

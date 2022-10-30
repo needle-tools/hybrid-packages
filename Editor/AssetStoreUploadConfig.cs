@@ -7,7 +7,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Needle.PackageTools
+namespace Needle.HybridPackages
 {
     [CreateAssetMenu(menuName = "Needle/Asset Store Upload Config")]
     public class AssetStoreUploadConfig : ScriptableObject  
@@ -78,7 +78,7 @@ namespace Needle.PackageTools
 
     [CanEditMultipleObjects]
     [CustomEditor(typeof(AssetStoreUploadConfig))]
-    public class AssetStoreUploadConfigEditor : Editor
+    internal class AssetStoreUploadConfigEditor : Editor
     {
         private ReorderableList itemList;
         
