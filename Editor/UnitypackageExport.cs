@@ -26,7 +26,7 @@ namespace Needle.HybridPackages
         static void SetKeyword()
         {
             const string define = "UNITY_ASTOOLS_EXPERIMENTAL";
-            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.activeBuildTargetGroup).Split(";");
+            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.activeBuildTargetGroup).Split(';');
             if (!defines.Contains(define))
             {
                 var newDefines = new string[defines.Length + 1];
