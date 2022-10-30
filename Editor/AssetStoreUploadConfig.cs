@@ -151,10 +151,18 @@ namespace Needle.PackageTools
                 }
             }
             
-            if( GUILayout.Button( "Open export folder" ) )
+            if( GUILayout.Button( "Open Export Folder" ) )
             {
                 Application.OpenURL( outputLocation );
             }
+            
+            #if HAVE_AS_TOOLS_PACKAGE
+            if (GUILayout.Button("Open Asset Store Uploader"))
+            {
+                EditorApplication.ExecuteMenuItem("Asset Store Tools/Asset Store Uploader");
+            }
+            #endif
+            
             EditorGUI.indentLevel--;
             
 

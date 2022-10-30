@@ -17,7 +17,43 @@ namespace Needle.PackageTools
 {
     using Ignore = Ignore.Ignore;
 
-    public class PackagerPatchProvider
+    internal class PackagePathValidationPatchProvider
+    {
+        [InitializeOnLoadMethod]
+        static void OnGetPatches()
+        {
+            var harmony = new Harmony(nameof(PackagerPatchProvider));
+            var asms = AppDomain.CurrentDomain.GetAssemblies();  
+            var asm = asms.FirstOrDefault(x => x.FullName.StartsWith("asset-store-tools-editor"));
+            if (asm == null) return;
+            var type = asm.GetType("AssetStoreTools.Uploader.HybridPackageUploadWorkflowView");
+            var method = type?.GetMethod("IsValidLocalPackage", (BindingFlags) (-1));
+            if(method == null) return;
+            harmony.Patch(method, new HarmonyMethod(AccessTools.Method(typeof(IsValidPatch), "Prefix")));
+        }
+
+        private class IsValidPatch
+        {
+            private static bool Prefix(ref bool __result, string packageFolderPath, out string assetDatabasePackagePath)
+            {
+                var allPackages = UnityEditor.PackageManager.PackageInfo.GetAll();
+                var packageInfo = allPackages.FirstOrDefault(
+                    x => x.resolvedPath.Replace("\\", "/") == packageFolderPath.Replace("\\", "/"));
+                if (packageInfo != null)
+                {
+                    assetDatabasePackagePath = packageInfo.assetPath;
+                    __result = true;
+                    return false;
+                }
+                
+                assetDatabasePackagePath = "";
+                __result = false;
+                return true;
+            }
+        }
+    }
+    
+    internal class PackagerPatchProvider
     {
         [InitializeOnLoadMethod]
         static void OnGetPatches()
@@ -73,7 +109,7 @@ namespace Needle.PackageTools
         }
     }
 
-    public class AssetStoreToolsPatchProvider
+    internal class AssetStoreToolsPatchProvider
     {
         internal const string outputSubFolder = "Temp"; // NB: this is Unity's "project's Temp folder" so you shouldn't change it
         private static AssetStoreUploadConfig currentUploadConfig;
@@ -573,9 +609,7 @@ namespace Needle.PackageTools
                     EditorUtility.DisplayProgressBar("Creating .unitypackage", "Done", 1f);
                     EditorUtility.ClearProgressBar();
 
-                    /**
-                     * Note: "filename" is actually "relative-folder + filename" (it's wrongly named), so we introduce "outputPreDir" as the (folder containing the folder with the file)
-                     */
+                    // Note: "filename" is actually "relative-folder + filename" (it's wrongly named), so we introduce "outputPreDir" as the (folder containing the folder with the file)
                     var outputPreDir = Path.GetDirectoryName( Application.dataPath );
                     Debug.Log("Created .unitypackage in " + (sw.ElapsedMilliseconds / 1000f).ToString("F2") + "s at: \""+outputPreDir+"/"+ fileName+"\"" );
                     return false;

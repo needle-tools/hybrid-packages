@@ -15,6 +15,12 @@
     ],
     "autoReferenced": false,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.asset-store-tools",
+            "expression": "0.0.0",
+            "define": "HAVE_AS_TOOLS_PACKAGE"
+        }
+    ],
     "noEngineReferences": false
 }

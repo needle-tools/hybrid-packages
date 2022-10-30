@@ -20,6 +20,23 @@ namespace Needle.PackageTools
         //
         //     ExportUnitypackage(folders.Select(x => AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(x))), "Export.unitypackage");
         // }
+        
+#if HAVE_AS_TOOLS_PACKAGE
+        [InitializeOnLoadMethod]
+        static void SetKeyword()
+        {
+            const string define = "UNITY_ASTOOLS_EXPERIMENTAL";
+            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.activeBuildTargetGroup).Split(";");
+            if (!defines.Contains(define))
+            {
+                var newDefines = new string[defines.Length + 1];
+                Array.Copy(defines, newDefines, defines.Length);
+                newDefines[newDefines.Length - 1] = define;
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.activeBuildTargetGroup, string.Join(";", newDefines));
+                AssetDatabase.Refresh();
+            }
+        }
+#endif
 
         public static string ExportUnitypackage(IEnumerable<PackageInfo> packageInfo, string fileName)
         {
