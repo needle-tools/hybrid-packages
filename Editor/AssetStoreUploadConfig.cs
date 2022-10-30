@@ -111,7 +111,9 @@ namespace Needle.HybridPackages
                 }
                 else
                 {
-                    EditorGUI.LabelField(rect, "Will be exported directly", EditorStyles.miniLabel);
+                    EditorGUI.HelpBox(rect, "This file is not part of a package.", MessageType.Warning);
+                    rect.y += 20;
+                    EditorGUI.LabelField(rect, "Please export a regular .unitypackage.", EditorStyles.miniLabel);
                 }
             };
         }

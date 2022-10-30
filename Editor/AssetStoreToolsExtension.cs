@@ -392,8 +392,16 @@ namespace Needle.HybridPackages
                 harmony.Patch(m, new HarmonyMethod(AccessTools.Method(typeof(PackagerExportPatch), "Prefix")));
             }
 
-            internal static bool ExportPackage(string[] guids, string fileName) => Prefix(guids, fileName, false);
-            
+            internal static bool ExportPackage(string[] guids, string fileName)
+            {
+                var result = Prefix(guids, fileName, false);
+                if (result)
+                {
+                    Debug.LogWarning("Couldn't export a Hybrid Package: no files selected that are in packages.");
+                }
+                return result;
+            }
+
             // ReSharper disable once UnusedMember.Local
             // ReSharper disable once UnusedParameter.Local
             // ReSharper disable once RedundantAssignment
