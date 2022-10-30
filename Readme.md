@@ -1,6 +1,6 @@
 # UPM Packages in .unitypackage files
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202021.1-brightgreen)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202022.1-brightgreen)
 
 Unity has two separate package formats:
 - `.unitypackage`, a zip-based file format that is used on the Asset Store
@@ -8,14 +8,24 @@ Unity has two separate package formats:
   
 The latter is newer, enforces better code and directory structure (AsmDefs required), and generally much easier to work with / add / remove / update.
 
-So far, it has been impossible to ship UPM packages on Asset Store or via `.unitypackage` files.  
+So far, it has been impossible to ship UPM packages on the Asset Store or via `.unitypackage` files.  
 This package fixes that. After installing, you can select assets and folders from the Packages folder to be exported, which 
 - allows packages to be uploaded to the Asset Store through the regular Asset Store Tools
 - enables <kbd>Assets/Export Package</kbd> to export stuff from package folders directly
 
 The resulting .unitypackage files _do not require any additional setup for users_. This package here is only required for creating those `.unitypackage` files, not for importing them.
 
-> :warning: This is experimental. Unity will likely add some form of UPM support to AssetStore in the next years.
+**If you switch to Hybrid Packages today, the transition to "registry-based" packages will be much more painless, as all your code and content will be ready on day 1.**  
+
+## Update (October 2022): Unity has listened and added Hybrid Packages support to their Asset Store Tools!  
+
+It's experimental and needs to be explcitily enabled. There's two ways:  
+
+- either add the Hybrid Packages package (this one)!  
+- or add the scripting define `UNITY_ASTOOLS_EXPERIMENTAL` in Project Settings.  
+  _Note:_ We still recommend installing the Hybrid Packages package as it fixes some current issues in Unity's tool, like selecting packages with `file:..` references.   
+
+This will unlock a new option in the Asset Store Uploader window:
 
 ## Installation 💾
 1. 
@@ -54,48 +64,43 @@ The resulting .unitypackage files _do not require any additional setup for users
 1. select what you want to export
 2. hit <kbd>Assets/Export Package</kbd> (also available via right click on Assets/Folders).  
 
-### Upload Packages to Asset Store
+### Upload Packages to Asset Store directly
 
-1. Export your Unitypackage (using the instructions above) - the other ways no longer work (Unity changed the assetstore tools)
 1. Install the Asset Store Tools as usual: https://assetstore.unity.com/packages/tools/utilities/asset-store-tools-115
-1. Open <kbd>Asset Store Tools/Upload</kbd>
-1. Find your draft package in the list (must have already created on Unity Publisher Portal)
-1. Choose the "Pre-exported unitypackage" option
-1. Select the .unitypackage you already exported/created 
-2. Make sure "include dependencies" is off - you can now specify them through your package.json!
-3. Press <kbd>Upload</kbd>
+2. Open <kbd>Asset Store Tools/Asset Store Uploader</kbd>
+3. Find your draft package in the list (must have already created on Unity Publisher Portal)
+4. Choose the "Local UPM Package" upload type
+5. Use the "Browse" button to select your package directory
+6. Select additional packages as needed in the "Extra Packages" section
+7. Press <kbd>Upload</kbd>
 
-#### Using an Upload Config
+#### Using an Upload Config to create and upload .unitypackage files
 
-Using a configuration file makes it easier to specify settings for export, and allows for "Package Bundles" (multiple packages shipped to AssetStore).  
+Using a configuration file makes it easier to specify settings for export, and allows for "Package Bundles" (multiple packages in one `.unitypackage`).  
 
-The AssetStoreTools only allow selecting one root folder.  
-Thus, this package allows you to create an "Upload Config" that specifies multiple packages / root folders to upload.  
-
-The basic flow is:  
+Here's how it works:  
 
 1. Create a folder for your "package collection" in Assets, e.g. "My Package Collection".
 2. In that folder, right click and create a `Needle/Asset Store Upload Config`.
 3. Add entries to the `Selection`" array and drag the folders/files into the `Item` field. 
    For packages, drag in the `package.json` since package folders can't be drag-dropped.  
    This can be a single file, a folder, one or multiple packages, or a combination of these.  
-2. To test your Hybrid Package locally, select your config, and click <kbd>Export for Local Testing</kbd>.  
+4. To test your Hybrid Package locally, select your config, and click <kbd>Export for Local Testing</kbd>.  
    This produces exactly the same .unitypackage as on Store upload, so you can test this one by importing it into a different/empty project.  
-1. NB: the above is now a REQUIRED step, it's the only way you can upload
-4. Open <kbd>Asset Store Tools/Package Upload</kbd>
-1. Press <kbd>Select</kbd> and select the directory that contains your upload config, e.g. "My Package Collection"
-3. Press <kbd>Upload</kbd>
+5. Open <kbd>Asset Store Tools/Asset Store Uploader</kbd>
+4. Choose the "Pre-exported unitypackage" upload type
+5. Select the .unitypackage you already exported that contains package data
+7. Press <kbd>Upload</kbd>
 
 ## Known Issues / Limitations
-- The optional <kbd>Validate</kbd> step isn't supported yet. Export your package via <kbd>Right Click/Export Package</kbd> and test in a separate project for now.
-- Dependencies into other packages shouldn't be exported, so it's recommended to turn off "Include Dependencies" when exporting a package.
-- If you run into any issues, you can temporarily disable the functionality via <kbd>Edit/Project Settings/Needle/Editor Patch Manager</kbd> or remove the package. Please report a bug!
+- The optional <kbd>Validate</kbd> step isn't supported yet. Export your package via <kbd>Right Click/Export Package</kbd> or an Upload Config and test in a separate project for now.
+- Dependencies into other packages shouldn't be exported, so you must turn off "Include Dependencies" when exporting a package.
 - The `package.json` of your package can [define dependencies](https://docs.unity3d.com/Manual/upm-manifestPrj.html). However, only dependencies from the Unity Registry will be automatically resolved in empty projects - we'll need to think of a separate mechanism / guidance for people to add dependencies from scoped registries. For now, it's recommended that you guard against missing dependencies via [Version Defines](https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#define-symbols).
 - .unitypackage preview images for hidden folders will not be exported unless you're on 2020.1+ and had that folder in the AssetDatabase in the current session (e.g. the folder was named "Samples" and then "Samples~" to hide it before export).
 - There's experimental support for .gitignore and .npmignore, but the behaviour isn't exactly the same as with npm/git (e.g. when multiple of these are in different folders, the order they are applied isn't always correct). You can turn this on on the UploadConfig asset.
 - The AssetStore Tools sometimes get stuck in an endless loop when trying to export nearly empty folders or empty multi-package sets. This seems to be an AssetStore Tools bug.
 
-## FAQ / Why should I use this / How does X change?
+## FAQ / Why should I use this?
 
 Hybrid Packages are an in-between solution. Unity is still not ready for a proper, registry-based package workflow for the Asset Store. Hybrid Packages allow Asset Store developers to switch to a package-based workflow today, with some (but not all) of the benefits of that, with no (known) downsides compared to the current workflow.  
 If you switch to Hybrid Packages today, the transition to "registry-based" packages will be much more painless, as all your code and content will be ready on day 1.  
