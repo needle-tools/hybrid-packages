@@ -1,7 +1,7 @@
 {
   "displayName": "Hybrid Packages",
   "name": "com.needle.upm-in-unitypackage",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "unity": "2018.4",
   "description": "Export UPM packages as .unitypackage files and upload them to the AssetStore",
   "author": {
