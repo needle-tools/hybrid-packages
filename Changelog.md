@@ -2,6 +2,10 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2023-08-22
+- catch patching exception
+- disable patching on Apple Silicon (unsupported)
+
 ## [0.6.2] - 2022-10-30
 - fixed compilation issue on 2020.x
 
