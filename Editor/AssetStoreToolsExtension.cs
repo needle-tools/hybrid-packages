@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using HarmonyLib;
 using UnityEditor;
 using UnityEngine;
@@ -29,8 +30,20 @@ namespace Needle.HybridPackages
             if (asm == null) return;
             var type = asm.GetType("AssetStoreTools.Uploader.HybridPackageUploadWorkflowView");
             var method = type?.GetMethod("IsValidLocalPackage", (BindingFlags) (-1));
-            if(method == null) return;
-            harmony.Patch(method, new HarmonyMethod(AccessTools.Method(typeof(IsValidPatch), "Prefix")));
+            if (method == null)
+            {
+                Debug.LogError($"Null method returned from {typeof(PackagePathValidationPatchProvider)}.IsValidLocalPackage. Please report a bug and note your Unity and package versions.");
+                return;
+            }
+
+            try
+            {
+                harmony.Patch(method, new HarmonyMethod(AccessTools.Method(typeof(IsValidPatch), "Prefix")));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Method patching failed from {typeof(PackagePathValidationPatchProvider)}.IsValidLocalPackage. Please report a bug and note your Unity and package versions.\n{e}");
+            }
         }
 
         private class IsValidPatch
@@ -64,6 +77,8 @@ namespace Needle.HybridPackages
         [InitializeOnLoadMethod]
         static void OnGetPatches()
         {
+            if (!Helpers.PatchingSupported()) return;
+            
             var harmony = new Harmony(nameof(PackagerPatchProvider));
             var type = typeof(EditorWindow).Assembly.GetType("UnityEditor.PackageExport");
             var method = type?.GetMethod("GetAssetItemsForExport", (BindingFlags) (-1));
@@ -125,6 +140,7 @@ namespace Needle.HybridPackages
         {
             // safeguard, should be prevented by OnWillEnablePatch
             if (Helpers.GetAssetStoreToolsAssembly() == null) return;
+            if (!Helpers.PatchingSupported()) return;
 
             var harmony = new Harmony(nameof(AssetStoreToolsPatchProvider));
             PathValidationPatch.Patch(harmony);
@@ -652,6 +668,17 @@ namespace Needle.HybridPackages
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var assembly = assemblies.FirstOrDefault(x => x.FullName == @"AssetStoreTools, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
             return assembly;
+        }
+
+        internal static bool PatchingSupported()
+        {
+            // Harmony is not supported on Apple Silicon right now; see
+            // https://github.com/pardeike/Harmony/issues/424
+            // blocked by https://github.com/MonoMod/MonoMod/issues/90
+            var isAppleSilicon = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                                 && RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+            return !isAppleSilicon;
         }
     }
 }
